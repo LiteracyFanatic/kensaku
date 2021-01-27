@@ -2,6 +2,7 @@ open System.Net
 open System.Net.Http
 open System.IO
 open System.IO.Compression
+open Microsoft.Data.Sqlite
 
 let downloadGZippedResource (hc: HttpClient) (url: string) (fileName: string) =
     async {
@@ -40,7 +41,14 @@ let downloadData () =
         downloadRadicalFiles
     ] |> Async.Parallel
 
+let makeDatabase (connection: SqliteConnection) =
+    connection.Open()
+    let cmd = connection.CreateCommand()
+    cmd.CommandText <- File.ReadAllText("sql/JMdict.sql")
+    cmd.ExecuteNonQuery() |> ignore
+
 [<EntryPoint>]
 let main argv =
-    downloadData () |> Async.RunSynchronously |> ignore
+    use connection = new SqliteConnection("Data Source=data/kensaku.db")
+    makeDatabase connection
     0
