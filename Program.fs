@@ -44,7 +44,7 @@ let downloadData () =
 let makeDatabase (connection: SqliteConnection) =
     connection.Open()
     let cmd = connection.CreateCommand()
-    cmd.CommandText <- File.ReadAllText("sql/JMdict.sql")
+    cmd.CommandText <- File.ReadAllText("sql/schema.sql")
     cmd.ExecuteNonQuery() |> ignore
 
 [<EntryPoint>]
