@@ -2,6 +2,8 @@ open System.Net
 open System.Net.Http
 open System.IO
 open System.IO.Compression
+open System.Text
+open System.Text.RegularExpressions
 open Microsoft.Data.Sqlite
 
 let downloadGZippedResource (hc: HttpClient) (url: string) (fileName: string) =
@@ -41,14 +43,55 @@ let downloadData () =
         downloadRadicalFiles
     ] |> Async.Parallel
 
-let makeDatabase (connection: SqliteConnection) =
-    connection.Open()
+let createSchema (connection: SqliteConnection) =
     let cmd = connection.CreateCommand()
     cmd.CommandText <- File.ReadAllText("sql/schema.sql")
     cmd.ExecuteNonQuery() |> ignore
 
+type RadkEntry = {
+    Radical: char
+    StrokeCount: int
+    Kanji: Set<char>
+}
+
+let parseRadkFile (path: string) =
+    let text = File.ReadAllText(path, Encoding.GetEncoding("EUC-JP"))
+    Regex.Matches(text, @"^\$ (.) (\d).*$([^$]+)", RegexOptions.Multiline)
+    |> Seq.toList
+    |> List.map (fun m ->
+        {
+            Radical = char m.Groups.[1].Value
+            StrokeCount= int m.Groups.[2].Value
+            // Remove newlines and katakana middle dots
+            Kanji = set m.Groups.[3].Value - set ['\n'; '\u30FB']
+        }
+    )
+
+let getRadkEntries () =
+    [
+        "data/radkfile"
+        "data/radkfile2"
+    ] |> List.collect parseRadkFile
+    |> List.groupBy (fun x -> x.Radical)
+    |> List.map (fun (radical, pair) ->
+        match pair with
+        | [ a; b ] ->
+            { a with Kanji = a.Kanji + b.Kanji }
+        | _ ->
+            failwithf "Expected exactly one entry for %c in each radk file." radical
+    )
+
+let populateTables (connection: SqliteConnection) =
+    let radkEntries = getRadkEntries ()
+    printfn "%A" radkEntries
+    ()
+
 [<EntryPoint>]
 let main argv =
+    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
     use connection = new SqliteConnection("Data Source=data/kensaku.db")
-    makeDatabase connection
+    connection.Open()
+    createSchema connection
+    populateTables connection
+    connection.Close()
     0
