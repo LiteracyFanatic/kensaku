@@ -246,11 +246,11 @@ CREATE TABLE "KeyRadicals" (
     PRIMARY KEY("id" AUTOINCREMENT)
 );
 DROP TABLE IF EXISTS "Characters_KeyRadicals";
-CREATE TABLE "Characters_Radicals" (
+CREATE TABLE "Characters_KeyRadicals" (
     "characterId" INTEGER NOT NULL,
     "keyRadicalId" INTEGER NOT NULL,
     FOREIGN KEY("characterId") REFERENCES "Characters"("id"),
-    FOREIGN KEY("radicalId") REFERENCES "KeyRadicals"("id")
+    FOREIGN KEY("keyRadicalId") REFERENCES "KeyRadicals"("id")
 );
 DROP TABLE IF EXISTS "StrokeMiscounts";
 CREATE TABLE "StrokeMiscounts" (
@@ -310,6 +310,21 @@ CREATE TABLE "Nanori" (
     "value" TEXT NOT NULL,
     FOREIGN KEY("characterId") REFERENCES "Characters"("id")
 );
+-- krad schema
+DROP TABLE IF EXISTS "Radicals";
+CREATE TABLE "Radicals" (
+    "id" INTEGER NOT NULL UNIQUE,
+    "value" TEXT NOT NULL UNIQUE,
+    "strokeCount" INTEGER NOT NULL,
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
+DROP TABLE IF EXISTS "Characters_Radicals";
+CREATE TABLE "Characters_Radicals" (
+    "characterId" INTEGER NOT NULL,
+    "radicalId" INTEGER NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id"),
+    FOREIGN KEY("radicalId") REFERENCES "Radicals"("id")
+);
 
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES
@@ -318,5 +333,6 @@ INSERT INTO sqlite_sequence VALUES
     ('Senses', 0),
     ('Translations', 0),
     ('Characters', 0),
+    ('KeyRadicals', 0),
     ('Radicals', 0);
 COMMIT;
