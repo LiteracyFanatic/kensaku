@@ -213,12 +213,110 @@ CREATE TABLE "TranslationContents" (
     "language" TEXT NOT NULL,
     FOREIGN KEY("translationId") REFERENCES "Translations"("id")
 );
+-- kanjidic2 schema
+DROP TABLE IF EXISTS "Kanjidic2Info";
+CREATE TABLE "Kanjidic2Info" (
+    "fileVersion" INTEGER NOT NULL,
+    "databaseVersion" TEXT NOT NULL,
+    "dateOfCreation" TEXT NOT NULL
+);
+DROP TABLE IF EXISTS "Characters";
+CREATE TABLE "Characters" (
+    "id" INTEGER NOT NULL UNIQUE,
+    "literal" TEXT NOT NULL,
+    "grade" INTEGER,
+    "strokeCount" INTEGER NOT NULL,
+    "frequency" INTEGER,
+    "isRadical" INTEGER NOT NULL,
+    "oldJlptLevel" INTEGER,
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
+DROP TABLE if EXISTS "Codepoints";
+CREATE TABLE "Codepoints" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "KeyRadicals";
+CREATE TABLE "KeyRadicals" (
+    "id" INTEGER NOT NULL UNIQUE,
+    "value" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
+DROP TABLE IF EXISTS "Characters_KeyRadicals";
+CREATE TABLE "Characters_Radicals" (
+    "characterId" INTEGER NOT NULL,
+    "keyRadicalId" INTEGER NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id"),
+    FOREIGN KEY("radicalId") REFERENCES "KeyRadicals"("id")
+);
+DROP TABLE IF EXISTS "StrokeMiscounts";
+CREATE TABLE "StrokeMiscounts" (
+    "characterId" INTEGER NOT NULL,
+    "count" INTEGER NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "CharacterVariants";
+CREATE TABLE "CharacterVariants" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "RadicalNames";
+CREATE TABLE "RadicalNames" (
+    "characterId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "CharacterDictionaryReferences";
+CREATE TABLE "CharacterDictionaryReferences" (
+    "characterId" INTEGER NOT NULL,
+    "indexNumber" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    "volume" INTEGER,
+    "page" INTEGER,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "CharacterQueryCodes";
+CREATE TABLE "CharacterQueryCodes" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "skipMisclassification" TEXT,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "CharacterReadings";
+CREATE TABLE "CharacterReadings" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "type", TEXT NOT NULL,
+    "isJouyou" INTEGER NOT NULL,
+    "onType" TEXT,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "CharacterMeanings";
+CREATE TABLE "CharacterMeanings" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    "language" TEXT NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
+DROP TABLE IF EXISTS "Nanori";
+CREATE TABLE "Nanori" (
+    "characterId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    FOREIGN KEY("characterId") REFERENCES "Characters"("id")
+);
 
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence
-VALUES
+INSERT INTO sqlite_sequence VALUES
     ('KanjiElements', 0),
     ('ReadingElements', 0),
     ('Senses', 0),
-    ('Translations', 0);
+    ('Translations', 0),
+    ('Characters', 0),
+    ('Radicals', 0);
 COMMIT;
