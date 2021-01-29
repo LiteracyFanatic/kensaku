@@ -327,7 +327,7 @@ CREATE TABLE "Characters_Radicals" (
 );
 
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES
+INSERT INTO sqlite_sequence ('name', 'seq') VALUES
     ('KanjiElements', 0),
     ('ReadingElements', 0),
     ('Senses', 0),
