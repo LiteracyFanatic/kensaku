@@ -81,10 +81,21 @@ let getRadkEntries () =
             failwithf "Expected exactly one entry for %c in each radk file." radical
     )
 
+let populateRadicals (connection: SqliteConnection) (radkEntries: RadkEntry list) =
+    use transation = connection.BeginTransaction()
+    let cmd = connection.CreateCommand()
+    cmd.CommandText <- "INSERT INTO RADICALS ('value', 'strokeCount') VALUES (@value, @strokeCount)"
+    let value = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+    let strokeCount = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@strokeCount"))
+    for entry in radkEntries do
+        value.Value <- entry.Radical
+        strokeCount.Value <- entry.StrokeCount
+        cmd.ExecuteNonQuery() |> ignore
+    transation.Commit()
+
 let populateTables (connection: SqliteConnection) =
     let radkEntries = getRadkEntries ()
-    printfn "%A" radkEntries
-    ()
+    populateRadicals connection radkEntries
 
 [<EntryPoint>]
 let main argv =
