@@ -90,7 +90,7 @@ CREATE TABLE "ReadingElements" (
     "id" INTEGER NOT NULL UNIQUE,
     "entryId" INTEGER NOT NULL,
     "text" TEXT NOT NULL,
-    "trueReading" INTEGER NOT NULL,
+    "isTrueReading" INTEGER NOT NULL,
     "priority" TEXT,
     FOREIGN KEY("entryId") REFERENCES "Entries"("id"),
     PRIMARY KEY("id" AUTOINCREMENT)
@@ -154,8 +154,8 @@ CREATE TABLE "LanguageSources" (
     "senseId" INTEGER NOT NULL,
     "text" TEXT,
     "languageCode" TEXT NOT NULL,
-    "partial" INTEGER NOT NULL,
-    "wasei" INTEGER NOT NULL,
+    "isPartial" INTEGER NOT NULL,
+    "isWasei" INTEGER NOT NULL,
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 DROP TABLE IF EXISTS "Glosses";
