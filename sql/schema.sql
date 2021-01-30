@@ -76,6 +76,26 @@ CREATE TABLE "KanjiElements_KanjiElementInformation" (
     FOREIGN KEY("kanjiElementInformationEntity") REFERENCES "KanjiElementInformation"("entity"),
     FOREIGN KEY("kanjiElementId") REFERENCES "KanjiElements"("id")
 );
+DROP TABLE IF EXISTS "Priorities";
+CREATE TABLE "Priorities" (
+    "id" INTEGER NOT NULL UNIQUE,
+    "value" TEXT NOT NULL UNIQUE,
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
+DROP TABLE IF EXISTS "KanjiElements_Priorities";
+CREATE TABLE "KanjiElements_Priorities" (
+    "kanjiElementId" INTEGER NOT NULL,
+    "priorityId" INTEGER NOT NULL,
+    FOREIGN KEY("kanjiElementId") REFERENCES "KanjiElements"("id"),
+    FOREIGN KEY("priorityId") REFERENCES "Priorities"(" id")
+);
+DROP TABLE IF EXISTS "ReadingElements_Priorities";
+CREATE TABLE "ReadingElements_Priorities" (
+    "readingElementId" INTEGER NOT NULL,
+    "priorityId" INTEGER NOT NULL,
+    FOREIGN KEY("readingElementId") REFERENCES "REadingElement"("id"),
+    FOREIGN KEY("priorityId") REFERENCES "Priorities"(" id")
+);
 DROP TABLE IF EXISTS "KanjiElements";
 CREATE TABLE "KanjiElements" (
     "id" INTEGER NOT NULL UNIQUE,
@@ -334,5 +354,6 @@ INSERT INTO sqlite_sequence ('name', 'seq') VALUES
     ('Translations', 0),
     ('Characters', 0),
     ('KeyRadicals', 0),
-    ('Radicals', 0);
+    ('Radicals', 0),
+    ('Priorities', 0);
 COMMIT;
