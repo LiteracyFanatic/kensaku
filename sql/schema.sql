@@ -20,60 +20,32 @@ CREATE TABLE "SenseCrossReferences" (
 );
 DROP TABLE IF EXISTS "Fields";
 CREATE TABLE "Fields" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
-);
-DROP TABLE IF EXISTS "MiscellaneousInformation";
-CREATE TABLE "MiscellaneousInformation" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
+    "senseId" INTEGER NOT NULL,
+    "value" TEXT NOT NULL,
+    FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 DROP TABLE IF EXISTS "PartsOfSpeech";
 CREATE TABLE "PartsOfSpeech" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
-);
-DROP TABLE IF EXISTS "Senses_Fields";
-CREATE TABLE "Senses_Fields" (
-    "senseId" INTEGER NOT NULL,
-    "fieldEntity" TEXT NOT NULL,
-    FOREIGN KEY("fieldEntity") REFERENCES "Fields"("entity"),
-    FOREIGN KEY("senseId") REFERENCES "Senses"("id")
-);
-DROP TABLE IF EXISTS "Senses_PartsOfSpeech";
-CREATE TABLE "Senses_PartsOfSpeech" (
     "sensesId" INTEGER NOT NULL,
-    "partsOfSpeechEntity" TEXT NOT NULL,
-    FOREIGN KEY("partsOfSpeechEntity") REFERENCES "PartsOfSpeech"("entity"),
+    "value" TEXT NOT NULL,
     FOREIGN KEY("sensesId") REFERENCES "Senses"("id")
 );
-DROP TABLE IF EXISTS "Senses_Dialects";
-CREATE TABLE "Senses_Dialects" (
+DROP TABLE IF EXISTS "Dialects";
+CREATE TABLE "Dialects" (
     "senseId" INTEGER NOT NULL,
-    "dialectEntity" TEXT NOT NULL,
-    FOREIGN KEY("senseId") REFERENCES "Senses"("id"),
-    FOREIGN KEY("dialectEntity") REFERENCES "Dialects"("entity")
+    "value" TEXT NOT NULL,
+    FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 DROP TABLE IF EXISTS "SenseInformation";
 CREATE TABLE "SenseInformation" (
     "senseId" INTEGER NOT NULL,
-    "text" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 DROP TABLE IF EXISTS "KanjiElementInformation";
 CREATE TABLE "KanjiElementInformation" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    CONSTRAINT "KanjiElementInfo_PK" PRIMARY KEY("entity")
-);
-DROP TABLE IF EXISTS "KanjiElements_KanjiElementInformation";
-CREATE TABLE "KanjiElements_KanjiElementInformation" (
     "kanjiElementId" INTEGER NOT NULL,
-    "kanjiElementInformationEntity" TEXT NOT NULL,
-    FOREIGN KEY("kanjiElementInformationEntity") REFERENCES "KanjiElementInformation"("entity"),
+    "value" TEXT NOT NULL,
     FOREIGN KEY("kanjiElementId") REFERENCES "KanjiElements"("id")
 );
 DROP TABLE IF EXISTS "Priorities";
@@ -100,7 +72,7 @@ DROP TABLE IF EXISTS "KanjiElements";
 CREATE TABLE "KanjiElements" (
     "id" INTEGER NOT NULL UNIQUE,
     "entryId" INTEGER NOT NULL,
-    "text" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "priority" TEXT,
     PRIMARY KEY("id" AUTOINCREMENT),
     FOREIGN KEY("entryId") REFERENCES "Entries"("id")
@@ -109,7 +81,7 @@ DROP TABLE IF EXISTS "ReadingElements";
 CREATE TABLE "ReadingElements" (
     "id" INTEGER NOT NULL UNIQUE,
     "entryId" INTEGER NOT NULL,
-    "text" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "isTrueReading" INTEGER NOT NULL,
     "priority" TEXT,
     FOREIGN KEY("entryId") REFERENCES "Entries"("id"),
@@ -117,16 +89,9 @@ CREATE TABLE "ReadingElements" (
 );
 DROP TABLE IF EXISTS "ReadingElementInformation";
 CREATE TABLE "ReadingElementInformation" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
-);
-DROP TABLE IF EXISTS "ReadingElements_ReadingElementInformation";
-CREATE TABLE "ReadingElements_ReadingElementInformation" (
     "readingElementId" INTEGER NOT NULL,
-    "readingElementInformationEntity" TEXT NOT NULL,
-    FOREIGN KEY("readingElementId") REFERENCES "ReadingElements"("id"),
-    FOREIGN KEY("readingElementInformationEntity") REFERENCES "ReadingElementInformation"("entity")
+    "value" TEXT NOT NULL,
+    FOREIGN KEY("readingElementId") REFERENCES "ReadingElements"("id")
 );
 DROP TABLE IF EXISTS "Senses";
 CREATE TABLE "Senses" (
@@ -156,23 +121,16 @@ CREATE TABLE "Sense_ReadingElement_Restrictions" (
     FOREIGN KEY("readingElementId") REFERENCES "ReadingElements"("id"),
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
-DROP TABLE IF EXISTS "Senses_MiscellaneousInformation";
-CREATE TABLE "Senses_MiscellaneousInformation" (
+DROP TABLE IF EXISTS "MiscellaneousInformation";
+CREATE TABLE "MiscellaneousInformation" (
     "senseId" INTEGER NOT NULL,
-    "miscellaneousInformationEntity" INTEGER NOT NULL,
-    FOREIGN KEY("miscellaneousInformationEntity") REFERENCES "MiscellaneousInformation"("entity"),
+    "value" TEXT NOT NULL,
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
-);
-DROP TABLE IF EXISTS "Dialects";
-CREATE TABLE "Dialects" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
 );
 DROP TABLE IF EXISTS "LanguageSources";
 CREATE TABLE "LanguageSources" (
     "senseId" INTEGER NOT NULL,
-    "text" TEXT,
+    "value" TEXT,
     "languageCode" TEXT NOT NULL,
     "isPartial" INTEGER NOT NULL,
     "isWasei" INTEGER NOT NULL,
@@ -181,7 +139,7 @@ CREATE TABLE "LanguageSources" (
 DROP TABLE IF EXISTS "Glosses";
 CREATE TABLE "Glosses" (
     "senseId" INTEGER NOT NULL,
-    "text" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "language" TEXT NOT NULL,
     "type" TEXT,
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
@@ -196,12 +154,6 @@ CREATE TABLE "Antonyms" (
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 -- Exclusive to JMneDict scehma
-DROP TABLE IF EXISTS "NameTypes";
-CREATE TABLE "NameTypes" (
-    "entity" TEXT NOT NULL UNIQUE,
-    "text" TEXT NOT NULL,
-    PRIMARY KEY("entity")
-);
 DROP TABLE IF EXISTS "Translations";
 CREATE TABLE "Translations" (
     "id" INTEGER NOT NULL UNIQUE,
@@ -209,11 +161,10 @@ CREATE TABLE "Translations" (
     FOREIGN KEY("entryId") REFERENCES "Entries"("id"),
     PRIMARY KEY("id" AUTOINCREMENT)
 );
-DROP TABLE IF EXISTS "Translations_NameTypes";
-CREATE TABLE "Translations_NameTypes" (
+DROP TABLE IF EXISTS "NameTypes";
+CREATE TABLE "NameTypes" (
     "translationId" INTEGER NOT NULL,
-    "nameTypeEntity" TEXT NOT NULL,
-    FOREIGN KEY("nameTypeEntity") REFERENCES "NameTypes"("entity"),
+    "value" TEXT NOT NULL,
     FOREIGN KEY("translationId") REFERENCES "Translations"("id")
 );
 DROP TABLE IF EXISTS "TranslationCrossReferences";
@@ -230,7 +181,7 @@ CREATE TABLE "TranslationCrossReferences" (
 DROP TABLE IF EXISTS "TranslationContents";
 CREATE TABLE "TranslationContents" (
     "translationId" INTEGER NOT NULL,
-    "text" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "language" TEXT NOT NULL,
     FOREIGN KEY("translationId") REFERENCES "Translations"("id")
 );
@@ -244,7 +195,7 @@ CREATE TABLE "Kanjidic2Info" (
 DROP TABLE IF EXISTS "Characters";
 CREATE TABLE "Characters" (
     "id" INTEGER NOT NULL UNIQUE,
-    "literal" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "grade" INTEGER,
     "strokeCount" INTEGER NOT NULL,
     "frequency" INTEGER,
@@ -289,7 +240,7 @@ CREATE TABLE "CharacterVariants" (
 DROP TABLE IF EXISTS "RadicalNames";
 CREATE TABLE "RadicalNames" (
     "characterId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     FOREIGN KEY("characterId") REFERENCES "Characters"("id")
 );
 DROP TABLE IF EXISTS "CharacterDictionaryReferences";
