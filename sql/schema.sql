@@ -183,6 +183,7 @@ CREATE TABLE "Glosses" (
     "senseId" INTEGER NOT NULL,
     "text" TEXT NOT NULL,
     "language" TEXT NOT NULL,
+    "type" TEXT,
     FOREIGN KEY("senseId") REFERENCES "Senses"("id")
 );
 DROP TABLE IF EXISTS "Antonyms";
