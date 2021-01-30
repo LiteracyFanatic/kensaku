@@ -4,8 +4,8 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Utilities.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="src/Utilities.fs" />
+    <Compile Include="src/Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.2" />
