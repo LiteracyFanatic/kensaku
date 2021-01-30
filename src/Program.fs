@@ -4,6 +4,8 @@ open System.IO
 open System.IO.Compression
 open System.Text
 open System.Text.RegularExpressions
+open System.Xml
+open System.Xml.Linq
 open Microsoft.Data.Sqlite
 
 let downloadGZippedResource (hc: HttpClient) (url: string) (fileName: string) =
@@ -81,6 +83,202 @@ let getRadkEntries () =
             failwithf "Expected exactly one entry for %c in each radk file." radical
     )
 
+let streamXmlElements (elementName: string) (path: string) =
+    let settings = XmlReaderSettings(DtdProcessing = DtdProcessing.Parse)
+    let reader = XmlReader.Create(path, settings)
+    reader.MoveToContent() |> ignore
+    seq {
+        try
+            while (reader.Read()) do
+                match reader.NodeType, reader.Name with
+                | XmlNodeType.Element, elementName ->
+                    yield XElement.ReadFrom(reader) :?> XElement
+                | _ -> ()
+        finally
+            reader.Dispose()
+    } 
+
+type KanjiElement = {
+    Value: string
+    Information: string list
+    Priority: string list
+}
+
+type ReadingElement = {
+    Value: string
+    IsTrueReading: bool
+    Restrictions: string list
+    Information: string list
+    Priority: string list
+}
+
+type CrossReference = {
+    Kanji: string option
+    Reading: string option
+    Sense: int option
+}
+
+type Antonym = {
+    Kanji: string option
+    Reading: string option
+}
+
+type LanguageSource = {
+    Value: string
+    Code: string
+    IsPartial: bool
+    IsWasei: bool
+}
+
+type Gloss = {
+    Value: string
+    LanguageCode: string
+    Type: string option
+}
+
+type Sense = {
+    KanjiRestrictions: string list
+    ReadingRestrictions: string list
+    PartsOfSpeech: string list
+    CrossReferences: CrossReference list
+    Antonyms: Antonym list
+    Fields: string list
+    MiscellaneousInformation: string list
+    AdditionalInformation: string list
+    LanguageSources: LanguageSource list
+    Dialects: string list
+    Glosses: Gloss list
+}
+
+type JMdictEntry = {
+    Id: int
+    // Where did this come from?
+    IsProperName: bool
+    KanjiElements: KanjiElement list
+    ReadingElements: ReadingElement list
+    Senses: Sense list
+}
+
+let parseKanjiElement (el: XElement) =
+    {
+        Value = el.Element("keb").Value
+        Information = el.Elements("ke_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Priority = el.Elements("ke_pri") |> Seq.map (fun p -> p.Value) |> Seq.toList
+    }
+
+let parseReadingElement (el: XElement) =
+    {
+        Value = el.Element("reb").Value
+        IsTrueReading = isNull (el.Element("re_nokanji"))
+        Restrictions = el.Elements("re_restr") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Information = el.Elements("ke_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Priority = el.Elements("re_pri") |> Seq.map (fun p -> p.Value) |> Seq.toList
+    }
+
+let isKana (text: char) =
+    true
+
+let isKanji (text: char) =
+    true
+
+type ReferenceComponent =
+    | Kanji of string
+    | Reading of string
+    | Sense of int
+
+let tryParseReferenceComponent (text: string) =
+    if Seq.forall isKana text then
+        Some (Reading text)
+    else if Seq.exists isKanji text then
+        Some (Kanji text)
+    else
+        match System.Int32.TryParse(text) with
+        | true, i -> Some (Sense i)
+        | false, _ -> None
+
+
+let parseCrossReference (el: XElement) =
+    // Split on JIS center dot
+    let parts = el.Value.Split('\u2126')
+    let a = parts |> Array.tryItem 0 |> Option.collect tryParseReferenceComponent
+    let b = parts |> Array.tryItem 1 |> Option.collect tryParseReferenceComponent
+    let c = parts |> Array.tryItem 2 |> Option.collect tryParseReferenceComponent
+    let k, r, s =
+        match a, b, c with
+        | Some (Kanji k), Some (Reading r), Some (Sense s) -> Some k, Some r, Some s
+        | Some (Kanji k), Some (Reading r), None -> Some k, Some r, None
+        | Some (Kanji k), Some (Sense s), None -> Some k, None, Some s
+        | Some (Kanji k), None, None -> Some k, None, None
+        | Some (Reading r), None, None -> None, Some r, None
+        | _ -> failwithf "%s is not a valid cross reference." el.Value
+    {
+        Kanji = k
+        Reading = r
+        Sense = s
+    }
+
+let parseAntonym (el: XElement) =
+    let k, r =
+        match tryParseReferenceComponent el.Value with
+        | Some (Kanji k) -> Some k, None
+        | Some (Reading r) -> None, Some r
+        | _ -> failwithf "%s is not a valid antonym reference." el.Value
+    {
+        Kanji = k
+        Reading = r
+    }
+
+let parseLanguageCode (el: XElement) =
+    match el.Attribute(XName.Get("lang", XNamespace.Xml.NamespaceName)) with
+    | null -> "eng"
+    | l -> l.Value
+
+let parseLanguageSource (el: XElement) =
+    {
+        Value = el.Value
+        Code = parseLanguageCode el
+        IsPartial = el.Attribute("ls_type") <> null
+        IsWasei = el.Attribute("wasei") <> null
+    }
+
+let parseGloss (el: XElement) =
+    let glossType =
+        match el.Element("g_type") with
+        | null -> None
+        | t -> Some t.Value
+    {
+        Value = el.Value
+        LanguageCode = parseLanguageCode el
+        Type = glossType
+    }
+
+let parseSense (el: XElement) =
+    {
+        KanjiRestrictions = el.Elements("stagk") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        ReadingRestrictions = el.Elements("stagr") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        PartsOfSpeech = el.Elements("pos") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        CrossReferences = el.Elements("xref") |> Seq.map parseCrossReference |> Seq.toList
+        Antonyms = el.Elements("re_pri") |> Seq.map parseAntonym |> Seq.toList
+        Fields = el.Elements("field") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        MiscellaneousInformation = el.Elements("misc") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        AdditionalInformation = el.Elements("s_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        LanguageSources = el.Elements("re_pri") |> Seq.map parseLanguageSource |> Seq.toList
+        Dialects = el.Elements("dial") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Glosses = el.Elements("gloss") |> Seq.map parseGloss |> Seq.toList
+    }
+
+let getJmdictEntries () =
+    streamXmlElements "entry" "data/JMdict.xml"
+    |> Seq.map (fun entry ->
+        {
+            Id = entry.Element("ent_seq").Value |> int
+            IsProperName = false
+            KanjiElements = entry.Elements("k_ele") |> Seq.map parseKanjiElement |> Seq.toList
+            ReadingElements = entry.Elements("r_ele") |> Seq.map parseReadingElement |> Seq.toList
+            Senses = entry.Elements("sense") |> Seq.map parseSense |> Seq.toList
+        }
+    )
+
 let populateRadicals (connection: SqliteConnection) (radkEntries: RadkEntry list) =
     use transation = connection.BeginTransaction()
     let cmd = connection.CreateCommand()
@@ -100,9 +298,8 @@ let populateTables (connection: SqliteConnection) =
 [<EntryPoint>]
 let main argv =
     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-    use connection = new SqliteConnection("Data Source=data/kensaku.db")
-    connection.Open()
-    createSchema connection
-    populateTables connection
-    connection.Close()
+    getJmdictEntries ()
+    |> Seq.take 10
+    |> Seq.toList
+    |> printfn "%A"
     0
