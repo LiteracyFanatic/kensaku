@@ -5,6 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/Utilities.fs" />
+    <Compile Include="src/DataFiles.fs" />
+    <Compile Include="src/DataParsing.fs" />
+    <Compile Include="src/Database.fs" />
     <Compile Include="src/Program.fs" />
   </ItemGroup>
   <ItemGroup>
