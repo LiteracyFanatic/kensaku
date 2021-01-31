@@ -41,7 +41,8 @@ let getRadkEntries () =
     )
 
 let streamXmlElements (elementName: string) (path: string) =
-    let settings = XmlReaderSettings(DtdProcessing = DtdProcessing.Parse)
+    // Parse the DTD and expand all entities
+    let settings = XmlReaderSettings(DtdProcessing = DtdProcessing.Parse, MaxCharactersFromEntities = 0L)
     let reader = XmlReader.Create(path, settings)
     reader.MoveToContent() |> ignore
     seq {
@@ -250,5 +251,50 @@ let getJMdictEntries () =
             KanjiElements = parseElementList "k_ele" parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" parseReadingElement entry
             Senses = parseElementList "sense" parseSense entry
+        }
+    )
+
+type TranslationContents = {
+    Value: string
+    LanguageCode: string
+}
+
+type Translation = {
+    NameTypes: string list
+    CrossReferences: CrossReference list
+    Contents: TranslationContents list
+}
+
+type JMnedictEntry = {
+    Id: int
+    // Where did this come from?
+    IsProperName: bool
+    KanjiElements: KanjiElement list
+    ReadingElements: ReadingElement list
+    Translations: Translation list
+}
+
+let parseTranslationContents (el: XElement) =
+    {
+        Value = el.Value
+        LanguageCode = parseLanguageCode el
+    }
+
+let parseTranslation (el: XElement) =
+    {
+        NameTypes = parseElementList "name_type" (fun p -> p.Value) el
+        CrossReferences = parseElementList "xref" parseCrossReference el
+        Contents = parseElementList "trans_det" parseTranslationContents el
+    }
+
+let getJMnedictEntries () =
+    streamXmlElements "entry" "data/JMnedict.xml"
+    |> Seq.map (fun entry ->
+        {
+            Id = entry.Element("ent_seq").Value |> int
+            IsProperName = false
+            KanjiElements = parseElementList "k_ele" parseKanjiElement entry
+            ReadingElements = parseElementList "r_ele" parseReadingElement entry
+            Translations = parseElementList "trans" parseTranslation entry
         }
     )
