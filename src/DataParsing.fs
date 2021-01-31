@@ -1,5 +1,6 @@
 module DataParsing
 
+open System
 open System.IO
 open System.Text
 open System.Text.RegularExpressions
@@ -144,25 +145,43 @@ type ReferenceComponent =
 let tryParseReferenceComponent (text: string) =
     if Seq.forall isKana text then
         Some (Reading text)
-    else if Seq.exists isKanji text then
-        Some (Kanji text)
     else
-        match System.Int32.TryParse(text) with
+        match Int32.TryParse(text) with
         | true, i -> Some (Sense i)
-        | false, _ -> None
-
+        | false, _ ->
+            if Seq.exists (not << isKana) text then
+                Some (Kanji text)
+            else
+                None
 
 let parseCrossReference (el: XElement) =
-    // Split on JIS center dot
-    let parts = el.Value.Split('\u2126')
+    // Split on katakana middle dot (・)
+    let parts = el.Value.Split('\u30FB')
+    // A cross-reference consists of a kanji, reading, and sense component 
+    // appearing in that order. Any of the parts may be omitted, so the type of
+    // each position varies.
     let a = parts |> Array.tryItem 0 |> Option.collect tryParseReferenceComponent
     let b = parts |> Array.tryItem 1 |> Option.collect tryParseReferenceComponent
     let c = parts |> Array.tryItem 2 |> Option.collect tryParseReferenceComponent
     let k, r, s =
         match a, b, c with
+        // Regular 3 component case
         | Some (Kanji k), Some (Reading r), Some (Sense s) -> Some k, Some r, Some s
+        // Regular 2 component cases
         | Some (Kanji k), Some (Reading r), None -> Some k, Some r, None
         | Some (Kanji k), Some (Sense s), None -> Some k, None, Some s
+        // It isn't obvious from the description in the JMdict DTD, but a
+        // reading and sense can occur without out a kanji component.
+        | Some (Reading r), Some (Sense s), None -> None, Some r, Some s
+        // These two cases are weird. The katakana middle dot only acts as a
+        // separator when there is more than one reference component. This means
+        // that a single kanji or reading component containing a literal
+        // katakana middle dot constitutes a valid cross-reference. Because we
+        // already split the entry above, we check for this here and assign the
+        // whole reference to the appropriate component if necessary.
+        | Some (Reading _), Some (Reading _), None -> None, Some el.Value, None
+        | Some (Reading _), Some (Kanji _), None -> Some el.Value, None, None
+        // Regular one component cases
         | Some (Kanji k), None, None -> Some k, None, None
         | Some (Reading r), None, None -> None, Some r, None
         | _ -> failwithf "%s is not a valid cross reference." el.Value
