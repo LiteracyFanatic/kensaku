@@ -241,7 +241,7 @@ let parseSense (el: XElement) =
         Glosses = parseElementList "gloss" parseGloss el
     }
 
-let getJmdictEntries () =
+let getJMdictEntries () =
     streamXmlElements "entry" "data/JMdict.xml"
     |> Seq.map (fun entry ->
         {

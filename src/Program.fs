@@ -3,7 +3,7 @@ open System.Text
 [<EntryPoint>]
 let main argv =
     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-    DataParsing.getJmdictEntries ()
+    DataParsing.getJMdictEntries ()
     |> Seq.toList
     |> printfn "%A"
     0
