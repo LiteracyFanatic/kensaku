@@ -159,20 +159,25 @@ type JMdictEntry = {
     Senses: Sense list
 }
 
+let parseElementList (elementName: string) (f: XElement -> 'a) (el: XElement) =
+    el.Elements(elementName)
+    |> Seq.map f
+    |> Seq.toList
+
 let parseKanjiElement (el: XElement) =
     {
         Value = el.Element("keb").Value
-        Information = el.Elements("ke_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        Priority = el.Elements("ke_pri") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Information = parseElementList "ke_inf" (fun p -> p.Value) el
+        Priority = parseElementList "ke_pri" (fun p -> p.Value) el
     }
 
 let parseReadingElement (el: XElement) =
     {
         Value = el.Element("reb").Value
         IsTrueReading = isNull (el.Element("re_nokanji"))
-        Restrictions = el.Elements("re_restr") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        Information = el.Elements("ke_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        Priority = el.Elements("re_pri") |> Seq.map (fun p -> p.Value) |> Seq.toList
+        Restrictions = parseElementList "re_restr" (fun p -> p.Value) el
+        Information = parseElementList "ke_inf" (fun p -> p.Value) el
+        Priority = parseElementList "re_pri" (fun p -> p.Value) el
     }
 
 let isKana (text: char) =
@@ -254,17 +259,17 @@ let parseGloss (el: XElement) =
 
 let parseSense (el: XElement) =
     {
-        KanjiRestrictions = el.Elements("stagk") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        ReadingRestrictions = el.Elements("stagr") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        PartsOfSpeech = el.Elements("pos") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        CrossReferences = el.Elements("xref") |> Seq.map parseCrossReference |> Seq.toList
-        Antonyms = el.Elements("re_pri") |> Seq.map parseAntonym |> Seq.toList
-        Fields = el.Elements("field") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        MiscellaneousInformation = el.Elements("misc") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        AdditionalInformation = el.Elements("s_inf") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        LanguageSources = el.Elements("re_pri") |> Seq.map parseLanguageSource |> Seq.toList
-        Dialects = el.Elements("dial") |> Seq.map (fun p -> p.Value) |> Seq.toList
-        Glosses = el.Elements("gloss") |> Seq.map parseGloss |> Seq.toList
+        KanjiRestrictions = parseElementList "stagk" (fun p -> p.Value) el
+        ReadingRestrictions = parseElementList "stagr" (fun p -> p.Value) el
+        PartsOfSpeech = parseElementList "pos" (fun p -> p.Value) el
+        CrossReferences = parseElementList "xref" parseCrossReference el
+        Antonyms = parseElementList "re_pri" parseAntonym el
+        Fields = parseElementList "field" (fun p -> p.Value) el
+        MiscellaneousInformation = parseElementList "misc" (fun p -> p.Value) el
+        AdditionalInformation = parseElementList "s_inf" (fun p -> p.Value) el
+        LanguageSources = parseElementList "re_pri" parseLanguageSource el
+        Dialects = parseElementList "dial" (fun p -> p.Value) el
+        Glosses = parseElementList "gloss" parseGloss el
     }
 
 let getJmdictEntries () =
@@ -273,9 +278,9 @@ let getJmdictEntries () =
         {
             Id = entry.Element("ent_seq").Value |> int
             IsProperName = false
-            KanjiElements = entry.Elements("k_ele") |> Seq.map parseKanjiElement |> Seq.toList
-            ReadingElements = entry.Elements("r_ele") |> Seq.map parseReadingElement |> Seq.toList
-            Senses = entry.Elements("sense") |> Seq.map parseSense |> Seq.toList
+            KanjiElements = parseElementList "k_ele" parseKanjiElement entry
+            ReadingElements = parseElementList "r_ele" parseReadingElement entry
+            Senses = parseElementList "sense" parseSense entry
         }
     )
 
