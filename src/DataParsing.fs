@@ -133,7 +133,7 @@ let parseReadingElement (el: XElement) =
         Value = el.Element("reb").Value
         IsTrueReading = isNull (el.Element("re_nokanji"))
         Restrictions = parseElementList "re_restr" (fun p -> p.Value) el
-        Information = parseElementList "ke_inf" (fun p -> p.Value) el
+        Information = parseElementList "re_inf" (fun p -> p.Value) el
         Priority = parseElementList "re_pri" (fun p -> p.Value) el
     }
 
