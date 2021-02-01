@@ -24,6 +24,9 @@ type XElement with
     member this.SetAttributeValue(name, value) = this.SetAttributeValue(XName.Get name, value)
     member this.SetElementValue(name, value) = this.SetElementValue(XName.Get name, value)
 
+type XAttribute with
+    member this.TryGetValue() = this |> Option.ofObj |> Option.map (fun a -> a.Value)
+
 let isHiragana (c: char) =
     c >= '\u3040' && c <= '\u309f'
 

@@ -1,6 +1,7 @@
 module DataParsing
 
 open System
+open System.Globalization
 open System.IO
 open System.Text
 open System.Text.RegularExpressions
@@ -296,5 +297,189 @@ let getJMnedictEntries () =
             KanjiElements = parseElementList "k_ele" parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" parseReadingElement entry
             Translations = parseElementList "trans" parseTranslation entry
+        }
+    )
+
+type Kanjidic2Info = {
+    FileVersion: int
+    DatabaseVersion: string
+    DateOfCreation: DateTime
+}
+
+type CodePoint = {
+    Value: string
+    Type: string
+}
+
+type KeyRadical = {
+    Value: string
+    Type: string
+}
+
+type CharacterVariant = {
+    Value: string
+    Type: string
+}
+
+type DictionaryReference = {
+    IndexNumber: int
+    Type: string
+    Volume: int option
+    Page: int option
+}
+
+type QueryCode = {
+    Value: string
+    Type: string
+    SkipMisclassification: string option
+}
+
+type CharacterReading = {
+    Value: string
+    Type: string
+    IsJouyou: bool
+    OnType: string option
+}
+
+type CharacterMeaning = {
+    Value: string
+    LanguageCode: string
+}
+
+type Character = {
+    Value: char
+    CodePoints: CodePoint list
+    KeyRadicals: KeyRadical list
+    Grade: int option
+    StokeCount: int
+    Variants: CharacterVariant list
+    StrokeMiscounts: int list
+    Frequency: int option
+    IsRadical: bool
+    RadicalNames: string list
+    OldJlptLevel: int option
+    DictionaryReferences: DictionaryReference list
+    QueryCodes: QueryCode list
+    Readings: CharacterReading list
+    Meanings: CharacterMeaning list
+    Nanori: string list
+}
+
+let parseHeader (el: XElement) =
+    {
+        FileVersion = int (el.Element("file_version").Value)
+        DatabaseVersion = el.Element("database_version").Value
+        DateOfCreation = DateTime.Parse(el.Element("date_of_creation").Value, DateTimeFormatInfo.InvariantInfo)
+    }
+
+let parseCodePoint (el: XElement): CodePoint =
+    {
+        Value = el.Value
+        Type = el.Attribute("cp_type").Value
+    }
+
+let parseKeyRadical (el: XElement): KeyRadical =
+    {
+        Value = el.Value
+        Type = el.Attribute("rad_type").Value
+    }
+
+let parseGrade (el: XElement) =
+    match el.Element("misc").Element("grade") with
+    | null -> None
+    | g -> Some (int g.Value)
+
+let parseStrokeMiscounts (el: XElement) =
+    el.Element("misc").Elements("stroke_count")
+    |> Seq.skip 1
+    |> Seq.map (fun p -> int p.Value)
+    |> Seq.toList
+
+let parseVariant (el: XElement): CharacterVariant =
+    {
+        Value = el.Value
+        Type = el.Attribute("var_type").Value
+    }
+
+let parseFrequency (el: XElement) =
+    match el.Element("misc").Element("freq") with
+    | null -> None
+    | f -> Some (int f.Value)
+
+let parseOldJlptLevel (el: XElement) =
+    match el.Element("misc").Element("jlpt") with
+    | null -> None
+    | l -> Some (int l.Value)
+
+let parseDictionaryReference (el: XElement) =
+    {
+        IndexNumber = int el.Value
+        Type = el.Attribute("dr_type").Value
+        Volume = el.Attribute("m_vol").TryGetValue() |> Option.map int
+        Page = el.Attribute("m_page").TryGetValue() |> Option.map int
+    }
+
+let parseQueryCode (el: XElement) =
+    {
+        Value = el.Value
+        Type = el.Attribute("qc_type").Value
+        SkipMisclassification = el.Attribute("skip_misclass").TryGetValue()
+    }
+
+let parseCharacterReadings (el: XElement) =
+    match el.Element("reading_meaning") with
+    | null -> []
+    | rm ->
+        parseElementList "reading" (fun el ->
+            {
+                Value = el.Value
+                Type = el.Attribute("r_type").Value
+                IsJouyou = el.Attribute("r_status") <> null
+                OnType = el.Attribute("on_type").TryGetValue()
+            }
+        ) (rm.Element("rmgroup"))
+
+let parseCharacterMeanings (el: XElement) =
+    match el.Element("reading_meaning") with
+    | null -> []
+    | rm ->
+        parseElementList "meaning" (fun el ->
+            {
+                Value = el.Value
+                LanguageCode = parseLanguageCode el
+            }
+        ) (rm.Element("rmgroup"))
+
+let parseNanori (el: XElement) =
+    match el.Element("reading_meaning") with
+    | null -> []
+    | rm ->
+        parseElementList "nanori" (fun n -> n.Value) rm
+
+let getKanjidic2Info () =
+    streamXmlElements "header" "data/kanjidic2.xml"
+    |> Seq.head
+    |> parseHeader
+
+let getKanjidic2Entries () =
+    streamXmlElements "character" "data/kanjidic2.xml"
+    |> Seq.map (fun entry ->
+        {
+            Value = char (entry.Element("literal").Value)
+            CodePoints = parseElementList "cp_value" parseCodePoint (entry.Element("codepoint"))
+            KeyRadicals = parseElementList "rad_value" parseKeyRadical (entry.Element("radical"))
+            Grade = parseGrade entry
+            StokeCount = int (entry.Element("misc").Element("stroke_count").Value)
+            StrokeMiscounts = parseStrokeMiscounts entry
+            Variants = entry.Element("misc") |> parseElementList "variant" parseVariant
+            Frequency = parseFrequency entry
+            IsRadical = entry.Element("misc").Attribute("rad_name") <> null
+            RadicalNames = entry.Element("misc") |> parseElementList "rad_name" (fun p -> p.Value)
+            OldJlptLevel = parseOldJlptLevel entry
+            DictionaryReferences = entry.Element("dic_number") |> parseElementList "dic_ref" parseDictionaryReference
+            QueryCodes = entry.Element("query_code") |> parseElementList "q_code" parseQueryCode
+            Readings = parseCharacterReadings entry
+            Meanings = parseCharacterMeanings entry
+            Nanori = parseNanori entry
         }
     )
