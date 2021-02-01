@@ -49,10 +49,8 @@ let streamXmlElements (elementName: string) (path: string) =
     seq {
         try
             while (reader.Read()) do
-                match reader.NodeType, reader.Name with
-                | XmlNodeType.Element, elementName ->
+                if reader.NodeType = XmlNodeType.Element && reader.Name = elementName then
                     yield XElement.ReadFrom(reader) :?> XElement
-                | _ -> ()
         finally
             reader.Dispose()
     } 
