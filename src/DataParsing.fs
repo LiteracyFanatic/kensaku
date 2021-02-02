@@ -211,18 +211,14 @@ let parseLanguageSource (el: XElement) =
         Value = el.Value
         Code = parseLanguageCode el
         IsPartial = el.Attribute("ls_type") <> null
-        IsWasei = el.Attribute("wasei") <> null
+        IsWasei = el.Attribute("ls_wasei") <> null
     }
 
 let parseGloss (el: XElement) =
-    let glossType =
-        match el.Element("g_type") with
-        | null -> None
-        | t -> Some t.Value
     {
         Value = el.Value
         LanguageCode = parseLanguageCode el
-        Type = glossType
+        Type = el.Attribute("g_type").TryGetValue()
     }
 
 let parseSense (el: XElement) =
@@ -231,11 +227,11 @@ let parseSense (el: XElement) =
         ReadingRestrictions = parseElementList "stagr" (fun p -> p.Value) el
         PartsOfSpeech = parseElementList "pos" (fun p -> p.Value) el
         CrossReferences = parseElementList "xref" parseCrossReference el
-        Antonyms = parseElementList "re_pri" parseAntonym el
+        Antonyms = parseElementList "ant" parseAntonym el
         Fields = parseElementList "field" (fun p -> p.Value) el
         MiscellaneousInformation = parseElementList "misc" (fun p -> p.Value) el
         AdditionalInformation = parseElementList "s_inf" (fun p -> p.Value) el
-        LanguageSources = parseElementList "re_pri" parseLanguageSource el
+        LanguageSources = parseElementList "lsource" parseLanguageSource el
         Dialects = parseElementList "dial" (fun p -> p.Value) el
         Glosses = parseElementList "gloss" parseGloss el
     }
@@ -319,7 +315,7 @@ type CharacterVariant = {
 }
 
 type DictionaryReference = {
-    IndexNumber: int
+    IndexNumber: string
     Type: string
     Volume: int option
     Page: int option
@@ -408,20 +404,30 @@ let parseOldJlptLevel (el: XElement) =
     | null -> None
     | l -> Some (int l.Value)
 
-let parseDictionaryReference (el: XElement) =
-    {
-        IndexNumber = int el.Value
-        Type = el.Attribute("dr_type").Value
-        Volume = el.Attribute("m_vol").TryGetValue() |> Option.map int
-        Page = el.Attribute("m_page").TryGetValue() |> Option.map int
-    }
+let parseDictionaryReferences (el: XElement) =
+    match el.Element("dic_number") with
+    | null -> []
+    | d ->
+        parseElementList "dic_ref" (fun el ->
+            {
+                IndexNumber = el.Value
+                Type = el.Attribute("dr_type").Value
+                Volume = el.Attribute("m_vol").TryGetValue() |> Option.map int
+                Page = el.Attribute("m_page").TryGetValue() |> Option.map int
+            }
+        ) d
 
-let parseQueryCode (el: XElement) =
-    {
-        Value = el.Value
-        Type = el.Attribute("qc_type").Value
-        SkipMisclassification = el.Attribute("skip_misclass").TryGetValue()
-    }
+let parseQueryCodes (el: XElement) =
+    match el.Element("query_code") with
+    | null -> []
+    | q ->
+        parseElementList "q_code" (fun el ->
+            {
+                Value = el.Value
+                Type = el.Attribute("qc_type").Value
+                SkipMisclassification = el.Attribute("skip_misclass").TryGetValue()
+            }
+        ) q
 
 let parseCharacterReadings (el: XElement) =
     match el.Element("reading_meaning") with
@@ -470,11 +476,11 @@ let getKanjidic2Entries () =
             StrokeMiscounts = parseStrokeMiscounts entry
             Variants = entry.Element("misc") |> parseElementList "variant" parseVariant
             Frequency = parseFrequency entry
-            IsRadical = entry.Element("misc").Attribute("rad_name") <> null
+            IsRadical = entry.Element("misc").Element("rad_name") <> null
             RadicalNames = entry.Element("misc") |> parseElementList "rad_name" (fun p -> p.Value)
             OldJlptLevel = parseOldJlptLevel entry
-            DictionaryReferences = entry.Element("dic_number") |> parseElementList "dic_ref" parseDictionaryReference
-            QueryCodes = entry.Element("query_code") |> parseElementList "q_code" parseQueryCode
+            DictionaryReferences = parseDictionaryReferences entry
+            QueryCodes = parseQueryCodes entry
             Readings = parseCharacterReadings entry
             Meanings = parseCharacterMeanings entry
             Nanori = parseNanori entry
