@@ -13,7 +13,6 @@ type RadkEntry = {
     StrokeCount: int
     Kanji: Set<Rune>
 }
-
 let parseRadkFile (path: string) =
     let text = File.ReadAllText(path, Encoding.GetEncoding("EUC-JP"))
     Regex.Matches(text, @"^\$ (.) (\d).*$([^$]+)", RegexOptions.Multiline)
@@ -72,7 +71,7 @@ type ReadingElement = {
 type CrossReference = {
     Kanji: string option
     Reading: string option
-    Sense: int option
+    Index: int option
 }
 
 type Antonym = {
@@ -140,14 +139,14 @@ let parseReadingElement (el: XElement) =
 type ReferenceComponent =
     | Kanji of string
     | Reading of string
-    | Sense of int
+    | Index of int
 
 let tryParseReferenceComponent (text: string) =
     if Seq.forall isKana text then
         Some (Reading text)
     else
         match Int32.TryParse(text) with
-        | true, i -> Some (Sense i)
+        | true, i -> Some (Index i)
         | false, _ ->
             if Seq.exists (not << isKana) text then
                 Some (Kanji text)
@@ -163,16 +162,16 @@ let parseCrossReference (el: XElement) =
     let a = parts |> Array.tryItem 0 |> Option.collect tryParseReferenceComponent
     let b = parts |> Array.tryItem 1 |> Option.collect tryParseReferenceComponent
     let c = parts |> Array.tryItem 2 |> Option.collect tryParseReferenceComponent
-    let k, r, s =
+    let k, r, i =
         match a, b, c with
         // Regular 3 component case
-        | Some (Kanji k), Some (Reading r), Some (Sense s) -> Some k, Some r, Some s
+        | Some (Kanji k), Some (Reading r), Some (Index i) -> Some k, Some r, Some i
         // Regular 2 component cases
         | Some (Kanji k), Some (Reading r), None -> Some k, Some r, None
-        | Some (Kanji k), Some (Sense s), None -> Some k, None, Some s
+        | Some (Kanji k), Some (Index i), None -> Some k, None, Some i
         // It isn't obvious from the description in the JMdict DTD, but a
         // reading and sense can occur without out a kanji component.
-        | Some (Reading r), Some (Sense s), None -> None, Some r, Some s
+        | Some (Reading r), Some (Index i), None -> None, Some r, Some i
         // These two cases are weird. The katakana middle dot only acts as a
         // separator when there is more than one reference component. This means
         // that a single kanji or reading component containing a literal
@@ -188,7 +187,7 @@ let parseCrossReference (el: XElement) =
     {
         Kanji = k
         Reading = r
-        Sense = s
+        Index = i
     }
 
 let parseAntonym (el: XElement) =
