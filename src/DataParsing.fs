@@ -9,9 +9,9 @@ open System.Xml
 open System.Xml.Linq
 
 type RadkEntry = {
-    Radical: char
+    Radical: Rune
     StrokeCount: int
-    Kanji: Set<char>
+    Kanji: Set<Rune>
 }
 
 let parseRadkFile (path: string) =
@@ -20,10 +20,10 @@ let parseRadkFile (path: string) =
     |> Seq.toList
     |> List.map (fun m ->
         {
-            Radical = char m.Groups.[1].Value
+            Radical = rune m.Groups.[1].Value
             StrokeCount= int m.Groups.[2].Value
             // Remove newlines and katakana middle dots
-            Kanji = set m.Groups.[3].Value - set ['\n'; '\u30FB']
+            Kanji = set (m.Groups.[3].Value.EnumerateRunes()) - set [rune '\n'; rune '\u30FB']
         }
     )
 
@@ -38,7 +38,7 @@ let getRadkEntries () =
         | [ a; b ] ->
             { a with Kanji = a.Kanji + b.Kanji }
         | _ ->
-            failwithf "Expected exactly one entry for %c in each radk file." radical
+            failwithf "Expected exactly one entry for %A in each radk file." radical
     )
 
 let streamXmlElements (elementName: string) (path: string) =
@@ -345,7 +345,7 @@ type CharacterMeaning = {
 }
 
 type Character = {
-    Value: char
+    Value: Rune
     CodePoints: CodePoint list
     KeyRadicals: KeyRadical list
     Grade: int option
@@ -463,7 +463,7 @@ let getKanjidic2Entries () =
     streamXmlElements "character" "data/kanjidic2.xml"
     |> Seq.map (fun entry ->
         {
-            Value = char (entry.Element("literal").Value)
+            Value = Rune.GetRuneAt(entry.Element("literal").Value, 0)
             CodePoints = parseElementList "cp_value" parseCodePoint (entry.Element("codepoint"))
             KeyRadicals = parseElementList "rad_value" parseKeyRadical (entry.Element("radical"))
             Grade = parseGrade entry

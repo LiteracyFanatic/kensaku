@@ -1,5 +1,7 @@
 [<AutoOpen>]
 module Utilities
+
+open System.Text
 open System.Xml.Linq
 
 module Option =
@@ -43,3 +45,6 @@ let isKanji (c: char) =
 
 let isJapanese (c: char) =
     isKana c || isKanji c
+
+let inline rune input =
+    Rune.GetRuneAt(string input, 0)
