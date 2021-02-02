@@ -237,8 +237,6 @@ CREATE TABLE "CharacterReadings" (
     "characterId" INTEGER NOT NULL,
     "value" TEXT NOT NULL,
     "type" TEXT NOT NULL,
-    "isJouyou" INTEGER NOT NULL,
-    "onType" TEXT,
     FOREIGN KEY("characterId") REFERENCES "Characters"("id")
 );
 DROP TABLE IF EXISTS "CharacterMeanings";

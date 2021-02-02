@@ -330,8 +330,6 @@ type QueryCode = {
 type CharacterReading = {
     Value: string
     Type: string
-    IsJouyou: bool
-    OnType: string option
 }
 
 type CharacterMeaning = {
@@ -437,8 +435,6 @@ let parseCharacterReadings (el: XElement) =
             {
                 Value = el.Value
                 Type = el.Attribute("r_type").Value
-                IsJouyou = el.Attribute("r_status") <> null
-                OnType = el.Attribute("on_type").TryGetValue()
             }
         ) (rm.Element("rmgroup"))
 

@@ -454,21 +454,14 @@ let populateCharacterQueryCodes (connection: SqliteConnection) (characterId: int
 
 let populateCharacterReadings (connection: SqliteConnection) (characterId: int) (readings: DataParsing.CharacterReading list) =
     use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterReadings ('characterId', 'value', 'type', 'isJouyou', 'onType') VALUES
-    (@characterId, @value, @type, @isJouyou, @onType)"
+    cmd.CommandText <- "INSERT INTO CharacterReadings ('characterId', 'value', 'type') VALUES (@characterId, @value, @type)"
     let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
     let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
     let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    let isJouyouParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isJouyou"))
-    let onTypeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@onType"))
     for r in readings do
         characterIdParameter.Value <- characterId
         valueParameter.Value <- r.Value
         typeParameter.Value <- r.Type
-        isJouyouParameter.Value <- r.IsJouyou
-        match r.OnType with
-        | Some o -> onTypeParameter.Value <- o
-        | None -> onTypeParameter.Value <- DBNull.Value
         cmd.ExecuteNonQuery() |> ignore
 
 let populateCharacterMeanings (connection: SqliteConnection) (characterId: int) (meanings: DataParsing.CharacterMeaning list) =
