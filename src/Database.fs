@@ -1,569 +1,358 @@
 module Database
 
-open System
 open System.IO
 open System.Text
-open Microsoft.Data.Sqlite
+open Dapper
+open System.Data.Common
 
-let createSchema (connection: SqliteConnection) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- File.ReadAllText("sql/schema.sql")
-    cmd.ExecuteNonQuery() |> ignore
+let createSchema (ctx: DbConnection) =
+    File.ReadAllText("sql/schema.sql")
+    |> ctx.Execute
+    |> ignore
 
-let getLastRowId (connection: SqliteConnection) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "SELECT last_insert_rowid()"
-    cmd.ExecuteScalar() :?> Int64 |> int
+let getLastRowId (ctx: DbConnection) =
+    ctx.QuerySingle<int>("SELECT last_insert_rowid()")
 
-let populateKanjiElementPriorities (connection: SqliteConnection) (kanjiElementId: int) (priorities: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO KanjiElementPriorities ('kanjiElementId', 'value') VALUES (@kanjiElementId, @value)"
-    let kanjiElementIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@kanjiElementId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateKanjiElementPriorities (ctx: DbConnection) (kanjiElementId: int) (priorities: string list) =
     for p in priorities do
-        kanjiElementIdParameter.Value <- kanjiElementId
-        valueParameter.Value <- p
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO KanjiElementPriorities ('KanjiElementId', 'Value') VALUES (@KanjiElementId, @Value)",
+            {| KanjiElementId = kanjiElementId; Value = p |}
+        ) |> ignore
 
-let populateKanjiElementInformation (connection: SqliteConnection) (kanjiElementId: int) (information: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO KanjiElementInformation ('kanjiElementId', 'value') VALUES (@kanjiElementId, @value)"
-    let kanjiElementIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@kanjiElementId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateKanjiElementInformation (ctx: DbConnection) (kanjiElementId: int) (information: string list) =
     for i in information do
-        kanjiElementIdParameter.Value <- kanjiElementId
-        valueParameter.Value <- i
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO KanjiElementInformation ('KanjiElementId', 'Value') VALUES (@KanjiElementId, @Value)",
+            {| KanjiElementId = kanjiElementId; Value = i |}
+        ) |> ignore
 
-let populateKanjiElements (connection: SqliteConnection) (entryId: int) (kanjiElements: DataParsing.KanjiElement list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO KanjiElements ('entryId', 'value') VALUES (@entryId, @value)"
-    let entryIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@entryId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateKanjiElements (ctx: DbConnection) (entryId: int) (kanjiElements: DataParsing.KanjiElement list) =
     for k in kanjiElements do
-        entryIdParameter.Value <- entryId
-        valueParameter.Value <- k.Value
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateKanjiElementPriorities connection id k.Priority
-        populateKanjiElementInformation connection id k.Information
+        ctx.Execute(
+            "INSERT INTO KanjiElements ('EntryId', 'Value') VALUES (@EntryId, @Value)",
+            {| k with EntryId = entryId |}
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateKanjiElementPriorities ctx id k.Priority
+        populateKanjiElementInformation ctx id k.Information
 
-let populateReadingElementPriorities (connection: SqliteConnection) (readingElementId: int) (priorities: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO ReadingElementPriorities ('readingElementId', 'value') VALUES (@readingElementId, @value)"
-    let readingElementIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@readingElementId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateReadingElementPriorities (ctx: DbConnection) (readingElementId: int) (priorities: string list) =
     for p in priorities do
-        readingElementIdParameter.Value <- readingElementId
-        valueParameter.Value <- p
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO ReadingElementPriorities ('ReadingElementId', 'Value') VALUES (@ReadingElementId, @Value)",
+            {| ReadingElementId = readingElementId; Value = p |}
+        ) |> ignore
 
-let populateReadingElementInformation (connection: SqliteConnection) (readingElementId: int) (information: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO ReadingElementInformation ('readingElementId', 'value') VALUES (@readingElementId, @value)"
-    let readingElementIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@readingElementId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateReadingElementInformation (ctx: DbConnection) (readingElementId: int) (information: string list) =
     for i in information do
-        readingElementIdParameter.Value <- readingElementId
-        valueParameter.Value <- i
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO ReadingElementInformation ('ReadingElementId', 'Value') VALUES (@ReadingElementId, @Value)",
+            {| ReadingElementId = readingElementId; Value = i |}
+        ) |> ignore
 
-let populateReadingElementRestrictions (connection: SqliteConnection) (readingElementId: int) (restrictions: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO ReadingElementRestrictions ('readingElementId', 'value') VALUES (@readingElementId, @value)"
-    let readingElementIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@readingElementId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateReadingElementRestrictions (ctx: DbConnection) (readingElementId: int) (restrictions: string list) =
     for r in restrictions do
-        readingElementIdParameter.Value <- readingElementId
-        valueParameter.Value <- r
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO ReadingElementRestrictions ('ReadingElementId', 'Value') VALUES (@ReadingElementId, @Value)",
+            {| ReadingElementId = readingElementId; Value = r |}
+        ) |> ignore
 
-let populateReadingElements (connection: SqliteConnection) (entryId: int) (readingElements: DataParsing.ReadingElement list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO ReadingElements ('entryId', 'value', 'isTrueReading') VALUES (@entryId, @value, @isTrueReading)"
-    let entryIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@entryId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let isTrueReadingParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isTrueReading"))
+let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements: DataParsing.ReadingElement list) =
     for r in readingElements do
-        entryIdParameter.Value <- entryId
-        valueParameter.Value <- r.Value
-        isTrueReadingParameter.Value <- r.IsTrueReading
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateReadingElementPriorities connection id r.Priority
-        populateReadingElementInformation connection id r.Information
-        populateReadingElementRestrictions connection id r.Restrictions
+        ctx.Execute(
+            "INSERT INTO ReadingElements ('EntryId', 'Value', 'IsTrueReading') VALUES (@EntryId, @Value, @IsTrueReading)",
+            {| r with EntryId = entryId |}
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateReadingElementPriorities ctx id r.Priority
+        populateReadingElementInformation ctx id r.Information
+        populateReadingElementRestrictions ctx id r.Restrictions
 
-let populateAntonyms (connection: SqliteConnection) (senseId: int) (antonyms: DataParsing.Antonym list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Antonyms ('senseId', 'referenceKanjiElement', 'referenceReadingElement') VALUES
-    (@senseId, @referenceKanjiElement, @referenceReadingElement)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let referenceKanjiElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceKanjiElement"))
-    let referenceReadingElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceReadingElement"))
+let populateAntonyms (ctx: DbConnection) (senseId: int) (antonyms: DataParsing.Antonym list) =
     for a in antonyms do
-        senseIdParameter.Value <- senseId
-        match a.Kanji with
-        | Some k -> referenceKanjiElementParameter.Value <- k
-        | None -> referenceKanjiElementParameter.Value <- DBNull.Value
-        match a.Reading with
-        | Some r -> referenceReadingElementParameter.Value <- r
-        | None -> referenceReadingElementParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO Antonyms ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement') VALUES(@SenseId, @Kanji, @Reading)",
+            {| a with SenseId = senseId |}
+        ) |> ignore
 
-let populateFields (connection: SqliteConnection) (senseId: int) (fields: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Fields ('senseId', 'value') VALUES (@senseId, @value)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateFields (ctx: DbConnection) (senseId: int) (fields: string list) =
     for f in fields do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- f
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO Fields ('SenseId', 'Value') VALUES (@SenseId, @Value)",
+            {| SenseId = senseId; Value = f |}
+        ) |> ignore
 
-let populateDialects (connection: SqliteConnection) (senseId: int) (dialects: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Dialects ('senseId', 'value') VALUES (@senseId, @value)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateDialects (ctx: DbConnection) (senseId: int) (dialects: string list) =
     for d in dialects do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- d
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO Dialects ('SenseId', 'Value') VALUES (@SenseId, @Value)",
+            {| SenseId = senseId; Value = d |}
+        ) |> ignore
 
-let populateMiscellaneousInformation (connection: SqliteConnection) (senseId: int) (miscellaneousInformation: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO MiscellaneousInformation ('senseId', 'value') VALUES (@senseId, @value)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateMiscellaneousInformation (ctx: DbConnection) (senseId: int) (miscellaneousInformation: string list) =
     for m in miscellaneousInformation do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- m
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO MiscellaneousInformation ('SenseId', 'Value') VALUES (@SenseId, @Value)",
+            {| SenseId = senseId; Value = m |}
+        ) |> ignore
 
-let populateAdditionalInformation (connection: SqliteConnection) (senseId: int) (additionalInformation: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO SenseInformation ('senseId', 'value') VALUES (@senseId, @value)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populateAdditionalInformation (ctx: DbConnection) (senseId: int) (additionalInformation: string list) =
     for a in additionalInformation do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- a
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO SenseInformation ('SenseId', 'Value') VALUES (@SenseId, @Value)",
+            {| SenseId = senseId; Value = a |}
+        ) |> ignore
 
-let populateLanguageSources (connection: SqliteConnection) (senseId: int) (languageSources: DataParsing.LanguageSource list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO LanguageSources ('senseId', 'value', 'languageCode', 'isPartial', 'isWasei') VALUES
-    (@senseId, @value, @code, @isPartial, @isWasei)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let codeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@code"))
-    let isPartialParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isPartial"))
-    let isWaseiParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isWasei"))
+let populateLanguageSources (ctx: DbConnection) (senseId: int) (languageSources: DataParsing.LanguageSource list) =
     for l in languageSources do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- l.Value
-        codeParameter.Value <- l.Code
-        isPartialParameter.Value <- l.IsPartial
-        isWaseiParameter.Value <- l.IsWasei
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO LanguageSources ('SenseId', 'Value', 'LanguageCode', 'IsPartial', 'IsWasei') VALUES (@SenseId, @Value, @Code, @IsPartial, @IsWasei)",
+            {| l with SenseId = senseId |}
+        ) |> ignore
 
-let populatePartsOfSpeech (connection: SqliteConnection) (senseId: int) (partsOfSpeech: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO PartsOfSpeech ('senseId', 'value') VALUES (@senseId, @value)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
+let populatePartsOfSpeech (ctx: DbConnection) (senseId: int) (partsOfSpeech: string list) =
     for p in partsOfSpeech do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- p
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO PartsOfSpeech ('SenseId', 'Value') VALUES (@SenseId, @Value)",
+            {| SenseId = senseId; Value = p |}
+        ) |> ignore
 
-let populateGlosses (connection: SqliteConnection) (senseId: int) (glosses: DataParsing.Gloss list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Glosses ('senseId', 'value', 'language', 'type') VALUES
-    (@senseId, @value, @language, @type)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let languageParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@language"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
+let populateGlosses (ctx: DbConnection) (senseId: int) (glosses: DataParsing.Gloss list) =
     for g in glosses do
-        senseIdParameter.Value <- senseId
-        valueParameter.Value <- g.Value
-        languageParameter.Value <- g.LanguageCode
-        match g.Type with
-        | Some t -> typeParameter.Value <- t
-        | None -> typeParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO Glosses ('SenseId', 'Value', 'Language', 'Type') VALUES (@SenseId, @Value, @LanguageCode, @Type)",
+            {| g with SenseId = senseId |}
+        ) |> ignore
 
-let populateSenseKanjiElementRestrictions (connection: SqliteConnection) (senseId: int) (restrictions: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO SenseKanjiElementRestrictions ('senseId', 'kanjiElement') VALUES (@senseId, @kanjiElement)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let kanjiElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@kanjiElement"))
+let populateSenseKanjiElementRestrictions (ctx: DbConnection) (senseId: int) (restrictions: string list) =
     for r in restrictions do
-        senseIdParameter.Value <- senseId
-        kanjiElementParameter.Value <- r
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO SenseKanjiElementRestrictions ('SenseId', 'KanjiElement') VALUES (@SenseId, @KanjiElement)",
+            {| SenseId = senseId; KanjiElement = r |}
+        ) |> ignore
 
-let populateSenseReadingElementRestrictions (connection: SqliteConnection) (senseId: int) (restrictions: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO SenseReadingElementRestrictions ('senseId', 'readingElement') VALUES (@senseId, @readingElement)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let readingElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@readingElement"))
+let populateSenseReadingElementRestrictions (ctx: DbConnection) (senseId: int) (restrictions: string list) =
     for r in restrictions do
-        senseIdParameter.Value <- senseId
-        readingElementParameter.Value <- r
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO SenseReadingElementRestrictions ('SenseId', 'ReadingElement') VALUES (@SenseId, @ReadingElement)",
+            {| SenseId = senseId; ReadingElement = r |}
+        ) |> ignore
 
-let populateSenseCrossReferences (connection: SqliteConnection) (senseId: int) (crossReferences: DataParsing.CrossReference list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO SenseCrossReferences ('senseId', 'referenceKanjiElement', 'referenceReadingElement', 'referenceSense') VALUES
-    (@senseId, @referenceKanjiElement, @referenceReadingElement, @referenceSense)"
-    let senseIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@senseId"))
-    let referenceKanjiElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceKanjiElement"))
-    let referenceReadingElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceReadingElement"))
-    let referenceSenseParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceSense"))
+let populateSenseCrossReferences (ctx: DbConnection) (senseId: int) (crossReferences: DataParsing.CrossReference list) =
     for c in crossReferences do
-        senseIdParameter.Value <- senseId
-        match c.Kanji with
-        | Some k -> referenceKanjiElementParameter.Value <- k
-        | None -> referenceKanjiElementParameter.Value <- DBNull.Value
-        match c.Reading with
-        | Some r -> referenceReadingElementParameter.Value <- r
-        | None -> referenceReadingElementParameter.Value <- DBNull.Value
-        match c.Index with
-        | Some s -> referenceSenseParameter.Value <- s
-        | None -> referenceSenseParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
+        ctx.Execute(
+            "INSERT INTO SenseCrossReferences ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceSense') VALUES (@SenseId, @Kanji, @Reading, @Index)",
+            {| c with SenseId = senseId |}
+        ) |> ignore
 
-let populateSenses (connection: SqliteConnection) (entryId: int) (senses: DataParsing.Sense list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Senses ('entryId') VALUES (@entryId)"
-    let entryIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@entryId"))
+let populateSenses (ctx: DbConnection) (entryId: int) (senses: DataParsing.Sense list) =
     for s in senses do
-        entryIdParameter.Value <- entryId
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateAntonyms connection id s.Antonyms
-        populateFields connection id s.Fields
-        populateDialects connection id s.Dialects
-        populateMiscellaneousInformation connection id s.MiscellaneousInformation
-        populateAdditionalInformation connection id s.AdditionalInformation
-        populateLanguageSources connection id s.LanguageSources
-        populatePartsOfSpeech connection id s.PartsOfSpeech
-        populateGlosses connection id s.Glosses
-        populateSenseKanjiElementRestrictions connection id s.KanjiRestrictions
-        populateSenseReadingElementRestrictions connection id s.ReadingRestrictions
-        populateSenseCrossReferences connection id s.CrossReferences
+        ctx.Execute(
+            "INSERT INTO Senses ('EntryId') VALUES (@EntryId)",
+            {| EntryId = entryId |}
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateAntonyms ctx id s.Antonyms
+        populateFields ctx id s.Fields
+        populateDialects ctx id s.Dialects
+        populateMiscellaneousInformation ctx id s.MiscellaneousInformation
+        populateAdditionalInformation ctx id s.AdditionalInformation
+        populateLanguageSources ctx id s.LanguageSources
+        populatePartsOfSpeech ctx id s.PartsOfSpeech
+        populateGlosses ctx id s.Glosses
+        populateSenseKanjiElementRestrictions ctx id s.KanjiRestrictions
+        populateSenseReadingElementRestrictions ctx id s.ReadingRestrictions
+        populateSenseCrossReferences ctx id s.CrossReferences
 
-let populateJMdictEntries (connection: SqliteConnection) (jMdictEntries: DataParsing.JMdictEntry seq) =
-    use transation = connection.BeginTransaction()
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Entries ('id', 'isProperName') VALUES (@id, @isProperName)"
-    let id = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@id"))
-    let isProperName = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isProperName"))
+let populateJMdictEntries (ctx: DbConnection) (jMdictEntries: DataParsing.JMdictEntry seq) =
+    use transaction = ctx.BeginTransaction()
     for entry in jMdictEntries do
-        id.Value <- entry.Id
-        isProperName.Value <- entry.IsProperName
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateKanjiElements connection id entry.KanjiElements
-        populateReadingElements connection id entry.ReadingElements
-        populateSenses connection id entry.Senses
-    transation.Commit()
-
-let populateNameTypes (connection: SqliteConnection) (translationId: int) (nameTypes: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO NameTypes ('translationId', 'value') VALUES (@translationId, @value)"
-    let translationIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@translationId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    for n in nameTypes do
-        translationIdParameter.Value <- translationId
-        valueParameter.Value <- n
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateTranslationCrossReferences (connection: SqliteConnection) (translationId: int) (crossReferences: DataParsing.CrossReference list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO TranslationCrossReferences ('translationId', 'referenceKanjiElement', 'referenceReadingElement', 'referenceTranslation') VALUES
-    (@translationId, @referenceKanjiElement, @referenceReadingElement, @referenceTranslation)"
-    let translationIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@translationId"))
-    let referenceKanjiElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceKanjiElement"))
-    let referenceReadingElementParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceReadingElement"))
-    let referenceTranslationParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@referenceTranslation"))
-    for c in crossReferences do
-        translationIdParameter.Value <- translationId
-        match c.Kanji with
-        | Some k -> referenceKanjiElementParameter.Value <- k
-        | None -> referenceKanjiElementParameter.Value <- DBNull.Value
-        match c.Reading with
-        | Some r -> referenceReadingElementParameter.Value <- r
-        | None -> referenceReadingElementParameter.Value <- DBNull.Value
-        match c.Index with
-        | Some s -> referenceTranslationParameter.Value <- s
-        | None -> referenceTranslationParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateTranslationContents (connection: SqliteConnection) (translationId: int) (contents: DataParsing.TranslationContents list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO TranslationContents ('translationId', 'value', 'language') VALUES (@translationId, @value, @language)"
-    let translationIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@translationId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let languageParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@language"))
-    for c in contents do
-        translationIdParameter.Value <- translationId
-        valueParameter.Value <- c.Value
-        languageParameter.Value <- c.LanguageCode
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateTranslations (connection: SqliteConnection) (entryId: int) (translations: DataParsing.Translation list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Translations ('entryId') VALUES (@entryId)"
-    let entryIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@entryId"))
-    for t in translations do
-        entryIdParameter.Value <- entryId
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateNameTypes connection id t.NameTypes
-        populateTranslationCrossReferences connection id t.CrossReferences
-        populateTranslationContents connection id t.Contents
-
-let populateJMnedictEntries (connection: SqliteConnection) (jMnedictEntries: DataParsing.JMnedictEntry seq) =
-    use transation = connection.BeginTransaction()
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Entries ('id', 'isProperName') VALUES (@id, @isProperName)"
-    let id = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@id"))
-    let isProperName = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isProperName"))
-    for entry in jMnedictEntries do
-        id.Value <- entry.Id
-        isProperName.Value <- entry.IsProperName
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateKanjiElements connection id entry.KanjiElements
-        populateReadingElements connection id entry.ReadingElements
-        populateTranslations connection id entry.Translations
-    transation.Commit()
-
-let populateKanjidic2Info (connection: SqliteConnection) (info: DataParsing.Kanjidic2Info) =
-    use transation = connection.BeginTransaction()
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Kanjidic2Info ('fileVersion', 'databaseVersion', 'dateOfCreation') VALUES
-    (@fileVersion, @databaseVersion, @dateOfCreation)"
-    let fileVersionParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@fileVersion"))
-    let databaseVersionParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@databaseVersion"))
-    let dateOfCreationParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@dateOfCreation"))
-    fileVersionParameter.Value <- info.FileVersion
-    databaseVersionParameter.Value <- info.DatabaseVersion
-    dateOfCreationParameter.Value <- info.DateOfCreation
-    cmd.ExecuteNonQuery() |> ignore
-    transation.Commit()
-
-let populateCodepoints (connection: SqliteConnection) (characterId: int) (codepoints: DataParsing.CodePoint list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Codepoints ('characterId', 'value', 'type') VALUES (@characterId, @value, @type)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    for c in codepoints do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- c.Value
-        typeParameter.Value <- c.Type
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateKeyRadicals (connection: SqliteConnection) (characterId: int) (keyRadicals: DataParsing.KeyRadical list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO KeyRadicals ('characterId', 'value', 'type') VALUES (@characterId, @value, @type)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    for k in keyRadicals do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- k.Value
-        typeParameter.Value <- k.Type
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateStrokeMiscounts (connection: SqliteConnection) (characterId: int) (strokeMiscounts: int list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO StrokeMiscounts ('characterId', 'value') VALUES (@characterId, @value)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    for s in strokeMiscounts do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- s
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateCharacterVariants (connection: SqliteConnection) (characterId: int) (characterVariants: DataParsing.CharacterVariant list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterVariants ('characterId', 'value', 'type') VALUES (@characterId, @value, @type)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    for c in characterVariants do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- c.Value
-        typeParameter.Value <- c.Type
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateRadicalNames (connection: SqliteConnection) (characterId: int) (radicalNames: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO RadicalNames ('characterId', 'value') VALUES (@characterId, @value)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    for r in radicalNames do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- r
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateCharacterDictionaryReferences (connection: SqliteConnection) (characterId: int) (references: DataParsing.DictionaryReference list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterDictionaryReferences
-    ('characterId', 'indexNumber', 'type', 'volume', 'page') VALUES
-    (@characterId, @indexNumber, @type, @volume, @page)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let indexNumberParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@indexNumber"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    let volumeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@volume"))
-    let pageParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@page"))
-    for r in references do
-        characterIdParameter.Value <- characterId
-        indexNumberParameter.Value <- r.IndexNumber
-        typeParameter.Value <- r.Type
-        match r.Volume with
-        | Some v -> volumeParameter.Value <- v
-        | None -> volumeParameter.Value <- DBNull.Value
-        match r.Page with
-        | Some p -> pageParameter.Value <- p
-        | None -> pageParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateCharacterQueryCodes (connection: SqliteConnection) (characterId: int) (queryCodes: DataParsing.QueryCode list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterQueryCodes ('characterId', 'value', 'type', 'skipMisclassification') VALUES
-    (@characterId, @value, @type, @skipMisclassification)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    let skipMisclassificationParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@skipMisclassification"))
-    for q in queryCodes do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- q.Value
-        typeParameter.Value <- q.Type
-        match q.SkipMisclassification with
-        | Some s -> skipMisclassificationParameter.Value <- s
-        | None -> skipMisclassificationParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateCharacterReadings (connection: SqliteConnection) (characterId: int) (readings: DataParsing.CharacterReading list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterReadings ('characterId', 'value', 'type') VALUES (@characterId, @value, @type)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let typeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@type"))
-    for r in readings do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- r.Value
-        typeParameter.Value <- r.Type
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateCharacterMeanings (connection: SqliteConnection) (characterId: int) (meanings: DataParsing.CharacterMeaning list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO CharacterMeanings ('characterId', 'value', 'language')
-    VALUES (@characterId, @value, @language)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let languageParam = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@language"))
-    for m in meanings do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- m.Value
-        languageParam.Value <- m.LanguageCode
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateNanori (connection: SqliteConnection) (characterId: int) (nanori: string list) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Nanori ('characterId', 'value') VALUES (@characterId, @value)"
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    for n in nanori do
-        characterIdParameter.Value <- characterId
-        valueParameter.Value <- n
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateKanjidic2Entries (connection: SqliteConnection) (characters: DataParsing.Character seq) =
-    use transation = connection.BeginTransaction()
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Characters ('value', 'grade', 'strokeCount', 'frequency', 'isRadical', 'oldJlptLevel')
-    VALUES (@value, @grade, @strokeCount, @frequency, @isRadical, @oldJlptLevel)"
-    let valueParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let gradeParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@grade"))
-    let strokeCountParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@strokeCount"))
-    let frequencyParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@frequency"))
-    let isRadicalParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@isRadical"))
-    let oldJlptLevelParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@oldJlptLevel"))
-    for c in characters do
-        valueParameter.Value <- string c.Value
-        match c.Grade with
-        | Some g -> gradeParameter.Value <- g
-        | None -> gradeParameter.Value <- DBNull.Value
-        strokeCountParameter.Value <- c.StokeCount
-        match c.Frequency with
-        | Some f -> frequencyParameter.Value <- f
-        | None -> frequencyParameter.Value <- DBNull.Value
-        isRadicalParameter.Value <- c.IsRadical
-        match c.OldJlptLevel with
-        | Some o -> oldJlptLevelParameter.Value <- o
-        | None -> oldJlptLevelParameter.Value <- DBNull.Value
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateCodepoints connection id c.CodePoints
-        populateKeyRadicals connection id c.KeyRadicals
-        populateStrokeMiscounts connection id c.StrokeMiscounts
-        populateCharacterVariants connection id c.Variants
-        populateRadicalNames connection id c.RadicalNames
-        populateCharacterDictionaryReferences connection id c.DictionaryReferences
-        populateCharacterQueryCodes connection id c.QueryCodes
-        populateCharacterReadings connection id c.Readings
-        populateCharacterMeanings connection id c.Meanings
-        populateNanori connection id c.Nanori
-    transation.Commit()
-
-let getCharacterId (connection: SqliteConnection) (character: Rune) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "SELECT id FROM Characters WHERE value = @character"
-    let characterParam = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@character"))
-    characterParam.Value <- string character
-    cmd.ExecuteScalar() :?> Int64 |> int
-
-let populateCharactersRadicals (connection: SqliteConnection) (radicalId: int) (characters: Set<Rune>) =
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO Characters_Radicals ('characterId', 'radicalId') VALUES (@characterId, @radicalId)"
-    let radicalIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@radicalId"))
-    let characterIdParameter = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@characterId"))
-    for c in characters do
-        radicalIdParameter.Value <- radicalId
-        characterIdParameter.Value <- getCharacterId connection c
-        cmd.ExecuteNonQuery() |> ignore
-
-let populateRadicals (connection: SqliteConnection) (radkEntries: DataParsing.RadkEntry list) =
-    use transaction = connection.BeginTransaction()
-    use cmd = connection.CreateCommand()
-    cmd.CommandText <- "INSERT INTO RADICALS ('value', 'strokeCount') VALUES (@value, @strokeCount)"
-    let value = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@value"))
-    let strokeCount = cmd.Parameters.Add(cmd.CreateParameter(ParameterName = "@strokeCount"))
-    for entry in radkEntries do
-        value.Value <- string entry.Radical
-        strokeCount.Value <- entry.StrokeCount
-        cmd.ExecuteNonQuery() |> ignore
-        let id = getLastRowId connection
-        populateCharactersRadicals connection id entry.Kanji
+        ctx.Execute(
+            "INSERT INTO Entries ('Id', 'IsProperName') VALUES (@Id, @IsProperName)",
+            entry
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateKanjiElements ctx id entry.KanjiElements
+        populateReadingElements ctx id entry.ReadingElements
+        populateSenses ctx id entry.Senses
     transaction.Commit()
 
-let populateTables (connection: SqliteConnection) =
+let populateNameTypes (ctx: DbConnection) (translationId: int) (nameTypes: string list) =
+    for n in nameTypes do
+        ctx.Execute(
+            "INSERT INTO NameTypes ('TranslationId', 'Value') VALUES (@TranslationId, @Value)",
+            {| TranslationId = translationId; Value = n |}
+        ) |> ignore
+
+let populateTranslationCrossReferences (ctx: DbConnection) (translationId: int) (crossReferences: DataParsing.CrossReference list) =
+    for c in crossReferences do
+        ctx.Execute(
+            "INSERT INTO TranslationCrossReferences ('TranslationId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceTranslation') VALUES (@TranslationId, @Kanji, @Reading, @Index)",
+            {| c with TranslationId = translationId |}
+        ) |> ignore
+
+let populateTranslationContents (ctx: DbConnection) (translationId: int) (contents: DataParsing.TranslationContents list) =
+    for c in contents do
+        ctx.Execute(
+            "INSERT INTO TranslationContents ('TranslationId', 'Value', 'Language') VALUES (@TranslationId, @Value, @LanguageCode)",
+            {| c with TranslationId = translationId |}
+        ) |> ignore
+
+let populateTranslations (ctx: DbConnection) (entryId: int) (translations: DataParsing.Translation list) =
+    for t in translations do
+        ctx.Execute(
+            "INSERT INTO Translations ('EntryId') VALUES (@EntryId)",
+            {| EntryId = entryId |}
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateNameTypes ctx id t.NameTypes
+        populateTranslationCrossReferences ctx id t.CrossReferences
+        populateTranslationContents ctx id t.Contents
+
+let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: DataParsing.JMnedictEntry seq) =
+    use transaction = ctx.BeginTransaction()
+    for entry in jMnedictEntries do
+        ctx.Execute(
+            "INSERT INTO Entries ('Id', 'IsProperName') VALUES (@Id, @IsProperName)",
+            entry
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateKanjiElements ctx id entry.KanjiElements
+        populateReadingElements ctx id entry.ReadingElements
+        populateTranslations ctx id entry.Translations
+    transaction.Commit()
+
+let populateKanjidic2Info (ctx: DbConnection) (info: DataParsing.Kanjidic2Info) =
+    use transaction = ctx.BeginTransaction()
+    ctx.Execute(
+        "INSERT INTO Kanjidic2Info ('FileVersion', 'DatabaseVersion', 'DateOfCreation') VALUES (@FileVersion, @DatabaseVersion, @DateOfCreation)",
+        info
+    ) |> ignore
+    transaction.Commit()
+
+let populateCodepoints (ctx: DbConnection) (characterId: int) (codepoints: DataParsing.CodePoint list) =
+    for c in codepoints do
+        ctx.Execute(
+            "INSERT INTO Codepoints ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
+            {| c with CharacterId = characterId |}
+        ) |> ignore
+
+let populateKeyRadicals (ctx: DbConnection) (characterId: int) (keyRadicals: DataParsing.KeyRadical list) =
+    for k in keyRadicals do
+        ctx.Execute(
+            "INSERT INTO KeyRadicals ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
+            {| k with CharacterId = characterId |}
+        ) |> ignore
+
+let populateStrokeMiscounts (ctx: DbConnection) (characterId: int) (strokeMiscounts: int list) =
+    for s in strokeMiscounts do
+        ctx.Execute(
+            "INSERT INTO StrokeMiscounts ('CharacterId', 'Value') VALUES (@CharacterId, @Value)",
+            {| CharacterId = characterId; Value = s |}
+        ) |> ignore
+
+let populateCharacterVariants (ctx: DbConnection) (characterId: int) (characterVariants: DataParsing.CharacterVariant list) =
+    for c in characterVariants do
+        ctx.Execute(
+            "INSERT INTO CharacterVariants ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
+            {| c with CharacterId = characterId |}
+        ) |> ignore
+
+let populateRadicalNames (ctx: DbConnection) (characterId: int) (radicalNames: string list) =
+    for r in radicalNames do
+        ctx.Execute(
+            "INSERT INTO RadicalNames ('CharacterId', 'Value') VALUES (@CharacterId, @Value)",
+            {| CharacterId = characterId; Value = r |}
+        ) |> ignore
+
+let populateCharacterDictionaryReferences (ctx: DbConnection) (characterId: int) (references: DataParsing.DictionaryReference list) =
+    for r in references do
+        ctx.Execute(
+            "INSERT INTO CharacterDictionaryReferences ('CharacterId', 'IndexNumber', 'Type', 'Volume', 'Page') VALUES (@CharacterId, @IndexNumber, @Type, @Volume, @Page)",
+            {| r with CharacterId = characterId |}
+        ) |> ignore
+
+let populateCharacterQueryCodes (ctx: DbConnection) (characterId: int) (queryCodes: DataParsing.QueryCode list) =
+    for q in queryCodes do
+        ctx.Execute(
+            "INSERT INTO CharacterQueryCodes ('CharacterId', 'Value', 'Type', 'SkipMisclassification') VALUES (@CharacterId, @Value, @Type, @SkipMisclassification)",
+            {| q with CharacterId = characterId |}
+        ) |> ignore
+
+let populateCharacterReadings (ctx: DbConnection) (characterId: int) (readings: DataParsing.CharacterReading list) =
+    for r in readings do
+        ctx.Execute(
+            "INSERT INTO CharacterReadings ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
+            {| r with CharacterId = characterId |}
+        ) |> ignore
+
+let populateCharacterMeanings (ctx: DbConnection) (characterId: int) (meanings: DataParsing.CharacterMeaning list) =
+    for m in meanings do
+        ctx.Execute(
+            "INSERT INTO CharacterMeanings ('CharacterId', 'Value', 'Language') VALUES (@CharacterId, @Value, @LanguageCode)",
+            {| m with CharacterId = characterId |}
+        ) |> ignore
+
+let populateNanori (ctx: DbConnection) (characterId: int) (nanori: string list) =
+    for n in nanori do
+        ctx.Execute(
+            "INSERT INTO Nanori ('CharacterId', 'Value') VALUES (@CharacterId, @Value)",
+            {| CharacterId = characterId; Value = n |}
+        ) |> ignore
+
+let populateKanjidic2Entries (ctx: DbConnection) (characters: DataParsing.Character seq) =
+    use transaction = ctx.BeginTransaction()
+    for c in characters do
+        ctx.Execute(
+            "INSERT INTO Characters ('Value', 'Grade', 'StrokeCount', 'Frequency', 'IsRadical', 'OldJlptLevel') VALUES (@Value, @Grade, @StrokeCount, @Frequency, @IsRadical, @OldJlptLevel)",
+            {| c with Value = string c.Value |}
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateCodepoints ctx id c.CodePoints
+        populateKeyRadicals ctx id c.KeyRadicals
+        populateStrokeMiscounts ctx id c.StrokeMiscounts
+        populateCharacterVariants ctx id c.Variants
+        populateRadicalNames ctx id c.RadicalNames
+        populateCharacterDictionaryReferences ctx id c.DictionaryReferences
+        populateCharacterQueryCodes ctx id c.QueryCodes
+        populateCharacterReadings ctx id c.Readings
+        populateCharacterMeanings ctx id c.Meanings
+        populateNanori ctx id c.Nanori
+    transaction.Commit()
+
+let getCharacterId (ctx: DbConnection) (character: Rune) =
+    ctx.ExecuteScalar<int>(
+        "SELECT id FROM Characters WHERE value = @Character",
+        {| Character = character |}
+    )
+
+let populateCharactersRadicals (ctx: DbConnection) (radicalId: int) (characters: Set<Rune>) =
+    for c in characters do
+        ctx.Execute(
+            "INSERT INTO Characters_Radicals ('CharacterId', 'RadicalId') VALUES (@CharacterId, @RadicalId)",
+            {| RadicalId = radicalId; CharacterId = getCharacterId ctx c |}
+        ) |> ignore
+
+let populateRadicals (ctx: DbConnection) (radkEntries: DataParsing.RadkEntry list) =
+    use transaction = ctx.BeginTransaction()
+    for entry in radkEntries do
+        ctx.Execute(
+            "INSERT INTO RADICALS ('Value', 'StrokeCount') VALUES (@Radical, @StrokeCount)",
+            entry
+        ) |> ignore
+        let id = getLastRowId ctx
+        populateCharactersRadicals ctx id entry.Kanji
+    transaction.Commit()
+
+let populateTables (ctx: DbConnection) =
     let jMdictEntries = DataParsing.getJMdictEntries()
-    populateJMdictEntries connection jMdictEntries
+    populateJMdictEntries ctx jMdictEntries
     let jMnedictEntries = DataParsing.getJMnedictEntries()
-    populateJMnedictEntries connection jMnedictEntries
+    populateJMnedictEntries ctx jMnedictEntries
     let kanjidic2Info = DataParsing.getKanjidic2Info ()
-    populateKanjidic2Info connection kanjidic2Info
+    populateKanjidic2Info ctx kanjidic2Info
     let kanjidic2Entries = DataParsing.getKanjidic2Entries ()
-    populateKanjidic2Entries connection kanjidic2Entries
+    populateKanjidic2Entries ctx kanjidic2Entries
     let radkEntries = DataParsing.getRadkEntries ()
-    populateRadicals connection radkEntries
+    populateRadicals ctx radkEntries

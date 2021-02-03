@@ -342,7 +342,7 @@ type Character = {
     CodePoints: CodePoint list
     KeyRadicals: KeyRadical list
     Grade: int option
-    StokeCount: int
+    StrokeCount: int
     Variants: CharacterVariant list
     StrokeMiscounts: int list
     Frequency: int option
@@ -468,7 +468,7 @@ let getKanjidic2Entries () =
             CodePoints = parseElementList "cp_value" parseCodePoint (entry.Element("codepoint"))
             KeyRadicals = parseElementList "rad_value" parseKeyRadical (entry.Element("radical"))
             Grade = parseGrade entry
-            StokeCount = int (entry.Element("misc").Element("stroke_count").Value)
+            StrokeCount = int (entry.Element("misc").Element("stroke_count").Value)
             StrokeMiscounts = parseStrokeMiscounts entry
             Variants = entry.Element("misc") |> parseElementList "variant" parseVariant
             Frequency = parseFrequency entry
