@@ -15,12 +15,12 @@ type RadkEntry = {
 }
 let parseRadkFile (path: string) =
     let text = File.ReadAllText(path, Encoding.GetEncoding("EUC-JP"))
-    Regex.Matches(text, @"^\$ (.) (\d).*$([^$]+)", RegexOptions.Multiline)
+    Regex.Matches(text, @"^\$ (.) (\d+).*$([^$]+)", RegexOptions.Multiline)
     |> Seq.toList
     |> List.map (fun m ->
         {
             Radical = rune m.Groups.[1].Value
-            StrokeCount= int m.Groups.[2].Value
+            StrokeCount= int m. Groups.[2].Value
             // Remove newlines and katakana middle dots
             Kanji = set (m.Groups.[3].Value.EnumerateRunes()) - set [rune '\n'; rune '\u30FB']
         }
