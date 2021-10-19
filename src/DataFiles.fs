@@ -1,6 +1,5 @@
 module DataFiles
 
-open System.Net
 open System.Net.Http
 open System.IO
 open System.IO.Compression
@@ -13,11 +12,10 @@ let downloadGZippedResource (hc: HttpClient) (url: string) (fileName: string) =
         return! data.CopyToAsync(fs) |> Async.AwaitTask
     }
 
-let downloadRadicalFiles =
+let downloadRadicalFiles (hc: HttpClient) =
     async {
-        let request = WebRequest.Create("ftp://ftp.monash.edu/pub/nihongo/kradzip.zip")
-        let! response = request.GetResponseAsync() |> Async.AwaitTask
-        use archive = new ZipArchive(response.GetResponseStream())
+        let! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip") |> Async.AwaitTask
+        use archive = new ZipArchive(stream)
         let files = [
             "kradfile"
             "kradfile2"
@@ -37,7 +35,7 @@ let downloadData () =
     let hc = new HttpClient()
     [
         downloadGZippedResource hc "http://ftp.edrdg.org/pub/Nihongo/JMdict.gz" "JMdict.xml"
-        downloadGZippedResource hc "http://ftp.monash.edu/pub/nihongo/JMnedict.xml.gz" "JMnedict.xml"
-        downloadGZippedResource hc "http://www.edrdg.org/kanjidic/kanjidic2.xml.gz" "kanjidic2.xml"
-        downloadRadicalFiles
+        downloadGZippedResource hc "http://ftp.edrdg.org/pub/Nihongo/JMnedict.xml.gz" "JMnedict.xml"
+        downloadGZippedResource hc "http://ftp.edrdg.org/pub/Nihongo/kanjidic2.xml.gz" "kanjidic2.xml"
+        downloadRadicalFiles hc
     ] |> Async.Parallel
