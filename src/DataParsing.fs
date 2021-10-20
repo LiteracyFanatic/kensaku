@@ -19,10 +19,10 @@ let parseRadkFile (path: string) =
     |> Seq.toList
     |> List.map (fun m ->
         {
-            Radical = rune m.Groups.[1].Value
-            StrokeCount= int m. Groups.[2].Value
+            Radical = rune m.Groups[1].Value
+            StrokeCount= int m. Groups[2].Value
             // Remove newlines and katakana middle dots
-            Kanji = set (m.Groups.[3].Value.EnumerateRunes()) - set [rune '\n'; rune '\u30FB']
+            Kanji = set (m.Groups[3].Value.EnumerateRunes()) - set [rune '\n'; rune '\u30FB']
         }
     )
 
@@ -49,7 +49,7 @@ let streamXmlElements (elementName: string) (path: string) =
         try
             while (reader.Read()) do
                 if reader.NodeType = XmlNodeType.Element && reader.Name = elementName then
-                    yield XElement.ReadFrom(reader) :?> XElement
+                    XElement.ReadFrom(reader) :?> XElement
         finally
             reader.Dispose()
     } 
@@ -203,7 +203,7 @@ let parseAntonym (el: XElement) =
     }
 
 let parseLanguageCode (el: XElement) =
-    match el.Attribute(XName.Get("lang", XNamespace.Xml.NamespaceName)) with
+    match el.Attribute(XNamespace.Xml + "lang") with
     | null -> "eng"
     | l -> l.Value
 

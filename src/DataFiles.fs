@@ -3,18 +3,19 @@ module DataFiles
 open System.Net.Http
 open System.IO
 open System.IO.Compression
+open System.Threading.Tasks
 
 let downloadGZippedResource (hc: HttpClient) (url: string) (fileName: string) =
-    async {
-        let! ms = hc.GetStreamAsync(url) |> Async.AwaitTask
+    task {
+        let! ms = hc.GetStreamAsync(url)
         use data = new GZipStream(ms, CompressionMode.Decompress)
         let fs = File.Create($"data/{fileName}")
-        return! data.CopyToAsync(fs) |> Async.AwaitTask
+        return! data.CopyToAsync(fs)
     }
 
 let downloadRadicalFiles (hc: HttpClient) =
-    async {
-        let! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip") |> Async.AwaitTask
+    task {
+        let! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip")
         use archive = new ZipArchive(stream)
         let files = [
             "kradfile"
@@ -38,4 +39,4 @@ let downloadData () =
         downloadGZippedResource hc "http://ftp.edrdg.org/pub/Nihongo/JMnedict.xml.gz" "JMnedict.xml"
         downloadGZippedResource hc "http://ftp.edrdg.org/pub/Nihongo/kanjidic2.xml.gz" "kanjidic2.xml"
         downloadRadicalFiles hc
-    ] |> Async.Parallel
+    ] |> Task.WhenAll
