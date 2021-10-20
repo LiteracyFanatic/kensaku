@@ -156,7 +156,7 @@ let tryParseReferenceComponent (text: string) =
 let parseCrossReference (el: XElement) =
     // Split on katakana middle dot (・)
     let parts = el.Value.Split('\u30FB')
-    // A cross-reference consists of a kanji, reading, and sense component 
+    // A cross-reference consists of a kanji, reading, and sense component
     // appearing in that order. Any of the parts may be omitted, so the type of
     // each position varies.
     let a = parts |> Array.tryItem 0 |> Option.collect tryParseReferenceComponent
@@ -172,13 +172,14 @@ let parseCrossReference (el: XElement) =
         // It isn't obvious from the description in the JMdict DTD, but a
         // reading and sense can occur without out a kanji component.
         | Some (Reading r), Some (Index i), None -> None, Some r, Some i
-        // These two cases are weird. The katakana middle dot only acts as a
+        // These three cases are weird. The katakana middle dot only acts as a
         // separator when there is more than one reference component. This means
         // that a single kanji or reading component containing a literal
         // katakana middle dot constitutes a valid cross-reference. Because we
         // already split the entry above, we check for this here and assign the
         // whole reference to the appropriate component if necessary.
         | Some (Reading _), Some (Reading _), None -> None, Some el.Value, None
+        | Some (Kanji _), Some (Kanji _), None -> Some el.Value, None, None
         | Some (Reading _), Some (Kanji _), None -> Some el.Value, None, None
         // Regular one component cases
         | Some (Kanji k), None, None -> Some k, None, None
