@@ -386,7 +386,34 @@ type RuneHandler() =
     override this.Parse(value) =
         rune value
 
+type Int32Handler() =
+    inherit SqlMapper.TypeHandler<int32>()
+
+    override this.SetValue(param, value) =
+        param.Value <- value
+
+    override this.Parse value =
+        int (value :?> int64)
+
+type Int32OptionHandler() =
+    inherit SqlMapper.TypeHandler<option<int32>>()
+
+    override this.SetValue(param, value) =
+        let valueOrNull =
+            match value with
+            | Some x -> box x
+            | None -> null
+
+        param.Value <- valueOrNull
+
+    override this.Parse value =
+        if isNull value || value = box DBNull.Value
+        then None
+        else Some (int (value :?> int64))
+
 let registerTypeHandlers () =
     SqlMapper.AddTypeHandler(OptionHandler<string>())
     SqlMapper.AddTypeHandler(OptionHandler<int>())
     SqlMapper.AddTypeHandler(RuneHandler())
+    SqlMapper.AddTypeHandler(Int32Handler())
+    SqlMapper.AddTypeHandler(Int32OptionHandler())
