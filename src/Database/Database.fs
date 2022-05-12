@@ -1,12 +1,16 @@
-module Database
+module Kensaku.Database
 
+open System
 open System.IO
 open System.Text
-open Dapper
+open System.Reflection
 open System.Data.Common
+open Dapper
 
 let createSchema (ctx: DbConnection) =
-    File.ReadAllText("sql/schema.sql")
+    let stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Database.sql.schema.sql")
+    use sr = new StreamReader(stream)
+    sr.ReadToEnd()
     |> ctx.Execute
     |> ignore
 
@@ -356,3 +360,33 @@ let populateTables (ctx: DbConnection) =
     populateKanjidic2Entries ctx kanjidic2Entries
     let radkEntries = DataParsing.getRadkEntries ()
     populateRadicals ctx radkEntries
+
+type OptionHandler<'T>() =
+    inherit SqlMapper.TypeHandler<option<'T>>()
+
+    override this.SetValue(param, value) =
+        let valueOrNull =
+            match value with
+            | Some x -> box x
+            | None -> null
+
+        param.Value <- valueOrNull
+
+    override this.Parse value =
+        if isNull value || value = box DBNull.Value
+        then None
+        else Some (value :?> 'T)
+
+type RuneHandler() =
+    inherit SqlMapper.TypeHandler<Rune>()
+
+    override this.SetValue(param, value) =
+        param.Value <- string value
+
+    override this.Parse(value) =
+        rune value
+
+let registerTypeHandlers () =
+    SqlMapper.AddTypeHandler(OptionHandler<string>())
+    SqlMapper.AddTypeHandler(OptionHandler<int>())
+    SqlMapper.AddTypeHandler(RuneHandler())

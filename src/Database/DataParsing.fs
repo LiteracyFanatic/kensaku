@@ -1,4 +1,4 @@
-module DataParsing
+module Kensaku.DataParsing
 
 open System
 open System.Globalization
@@ -13,6 +13,7 @@ type RadkEntry = {
     StrokeCount: int
     Kanji: Set<Rune>
 }
+
 let parseRadkFile (path: string) =
     let text = File.ReadAllText(path, Encoding.GetEncoding("EUC-JP"))
     Regex.Matches(text, @"^\$ (.) (\d+).*$([^$]+)", RegexOptions.Multiline)
@@ -338,6 +339,7 @@ type CharacterMeaning = {
     LanguageCode: string
 }
 
+[<CLIMutable>]
 type Character = {
     Value: Rune
     CodePoints: CodePoint list

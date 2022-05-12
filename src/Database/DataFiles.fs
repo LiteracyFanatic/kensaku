@@ -1,4 +1,4 @@
-module DataFiles
+module Kensaku.DataFiles
 
 open System.Net.Http
 open System.IO

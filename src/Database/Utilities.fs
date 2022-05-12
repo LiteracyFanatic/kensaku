@@ -1,5 +1,5 @@
 [<AutoOpen>]
-module Utilities
+module Kensaku.Utilities
 
 open System.Text
 open System.Xml.Linq
