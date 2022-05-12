@@ -2,7 +2,7 @@ module Kensaku.Core
 
 open System.Data.Common
 open Dapper
-open DataParsing
+open Kensaku.Domain
 
 let getCharactersWithStrokeCount (strokeCount: int) (ctx: DbConnection) =
     ctx.Query<Character>(

@@ -6,6 +6,7 @@ open System.Text
 open System.Reflection
 open System.Data.Common
 open Dapper
+open Kensaku.Domain
 
 let createSchema (ctx: DbConnection) =
     let stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Database.sql.schema.sql")
@@ -31,7 +32,7 @@ let populateKanjiElementInformation (ctx: DbConnection) (kanjiElementId: int) (i
             {| KanjiElementId = kanjiElementId; Value = i |}
         ) |> ignore
 
-let populateKanjiElements (ctx: DbConnection) (entryId: int) (kanjiElements: DataParsing.KanjiElement list) =
+let populateKanjiElements (ctx: DbConnection) (entryId: int) (kanjiElements: KanjiElement list) =
     for k in kanjiElements do
         ctx.Execute(
             "INSERT INTO KanjiElements ('EntryId', 'Value') VALUES (@EntryId, @Value)",
@@ -62,7 +63,7 @@ let populateReadingElementRestrictions (ctx: DbConnection) (readingElementId: in
             {| ReadingElementId = readingElementId; Value = r |}
         ) |> ignore
 
-let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements: DataParsing.ReadingElement list) =
+let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements: ReadingElement list) =
     for r in readingElements do
         ctx.Execute(
             "INSERT INTO ReadingElements ('EntryId', 'Value', 'IsTrueReading') VALUES (@EntryId, @Value, @IsTrueReading)",
@@ -73,7 +74,7 @@ let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements:
         populateReadingElementInformation ctx id r.Information
         populateReadingElementRestrictions ctx id r.Restrictions
 
-let populateAntonyms (ctx: DbConnection) (senseId: int) (antonyms: DataParsing.Antonym list) =
+let populateAntonyms (ctx: DbConnection) (senseId: int) (antonyms: Antonym list) =
     for a in antonyms do
         ctx.Execute(
             "INSERT INTO Antonyms ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement') VALUES(@SenseId, @Kanji, @Reading)",
@@ -108,7 +109,7 @@ let populateAdditionalInformation (ctx: DbConnection) (senseId: int) (additional
             {| SenseId = senseId; Value = a |}
         ) |> ignore
 
-let populateLanguageSources (ctx: DbConnection) (senseId: int) (languageSources: DataParsing.LanguageSource list) =
+let populateLanguageSources (ctx: DbConnection) (senseId: int) (languageSources: LanguageSource list) =
     for l in languageSources do
         ctx.Execute(
             "INSERT INTO LanguageSources ('SenseId', 'Value', 'LanguageCode', 'IsPartial', 'IsWasei') VALUES (@SenseId, @Value, @Code, @IsPartial, @IsWasei)",
@@ -122,7 +123,7 @@ let populatePartsOfSpeech (ctx: DbConnection) (senseId: int) (partsOfSpeech: str
             {| SenseId = senseId; Value = p |}
         ) |> ignore
 
-let populateGlosses (ctx: DbConnection) (senseId: int) (glosses: DataParsing.Gloss list) =
+let populateGlosses (ctx: DbConnection) (senseId: int) (glosses: Gloss list) =
     for g in glosses do
         ctx.Execute(
             "INSERT INTO Glosses ('SenseId', 'Value', 'Language', 'Type') VALUES (@SenseId, @Value, @LanguageCode, @Type)",
@@ -143,14 +144,14 @@ let populateSenseReadingElementRestrictions (ctx: DbConnection) (senseId: int) (
             {| SenseId = senseId; ReadingElement = r |}
         ) |> ignore
 
-let populateSenseCrossReferences (ctx: DbConnection) (senseId: int) (crossReferences: DataParsing.CrossReference list) =
+let populateSenseCrossReferences (ctx: DbConnection) (senseId: int) (crossReferences: CrossReference list) =
     for c in crossReferences do
         ctx.Execute(
             "INSERT INTO SenseCrossReferences ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceSense') VALUES (@SenseId, @Kanji, @Reading, @Index)",
             {| c with SenseId = senseId |}
         ) |> ignore
 
-let populateSenses (ctx: DbConnection) (entryId: int) (senses: DataParsing.Sense list) =
+let populateSenses (ctx: DbConnection) (entryId: int) (senses: Sense list) =
     for s in senses do
         ctx.Execute(
             "INSERT INTO Senses ('EntryId') VALUES (@EntryId)",
@@ -169,7 +170,7 @@ let populateSenses (ctx: DbConnection) (entryId: int) (senses: DataParsing.Sense
         populateSenseReadingElementRestrictions ctx id s.ReadingRestrictions
         populateSenseCrossReferences ctx id s.CrossReferences
 
-let populateJMdictEntries (ctx: DbConnection) (jMdictEntries: DataParsing.JMdictEntry seq) =
+let populateJMdictEntries (ctx: DbConnection) (jMdictEntries: JMdictEntry seq) =
     use transaction = ctx.BeginTransaction()
     for entry in jMdictEntries do
         ctx.Execute(
@@ -189,21 +190,21 @@ let populateNameTypes (ctx: DbConnection) (translationId: int) (nameTypes: strin
             {| TranslationId = translationId; Value = n |}
         ) |> ignore
 
-let populateTranslationCrossReferences (ctx: DbConnection) (translationId: int) (crossReferences: DataParsing.CrossReference list) =
+let populateTranslationCrossReferences (ctx: DbConnection) (translationId: int) (crossReferences: CrossReference list) =
     for c in crossReferences do
         ctx.Execute(
             "INSERT INTO TranslationCrossReferences ('TranslationId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceTranslation') VALUES (@TranslationId, @Kanji, @Reading, @Index)",
             {| c with TranslationId = translationId |}
         ) |> ignore
 
-let populateTranslationContents (ctx: DbConnection) (translationId: int) (contents: DataParsing.TranslationContents list) =
+let populateTranslationContents (ctx: DbConnection) (translationId: int) (contents: TranslationContents list) =
     for c in contents do
         ctx.Execute(
             "INSERT INTO TranslationContents ('TranslationId', 'Value', 'Language') VALUES (@TranslationId, @Value, @LanguageCode)",
             {| c with TranslationId = translationId |}
         ) |> ignore
 
-let populateTranslations (ctx: DbConnection) (entryId: int) (translations: DataParsing.Translation list) =
+let populateTranslations (ctx: DbConnection) (entryId: int) (translations: Translation list) =
     for t in translations do
         ctx.Execute(
             "INSERT INTO Translations ('EntryId') VALUES (@EntryId)",
@@ -214,7 +215,7 @@ let populateTranslations (ctx: DbConnection) (entryId: int) (translations: DataP
         populateTranslationCrossReferences ctx id t.CrossReferences
         populateTranslationContents ctx id t.Contents
 
-let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: DataParsing.JMnedictEntry seq) =
+let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: JMnedictEntry seq) =
     use transaction = ctx.BeginTransaction()
     for entry in jMnedictEntries do
         ctx.Execute(
@@ -227,7 +228,7 @@ let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: DataParsing.JM
         populateTranslations ctx id entry.Translations
     transaction.Commit()
 
-let populateKanjidic2Info (ctx: DbConnection) (info: DataParsing.Kanjidic2Info) =
+let populateKanjidic2Info (ctx: DbConnection) (info: Kanjidic2Info) =
     use transaction = ctx.BeginTransaction()
     ctx.Execute(
         "INSERT INTO Kanjidic2Info ('FileVersion', 'DatabaseVersion', 'DateOfCreation') VALUES (@FileVersion, @DatabaseVersion, @DateOfCreation)",
@@ -235,14 +236,14 @@ let populateKanjidic2Info (ctx: DbConnection) (info: DataParsing.Kanjidic2Info) 
     ) |> ignore
     transaction.Commit()
 
-let populateCodepoints (ctx: DbConnection) (characterId: int) (codepoints: DataParsing.CodePoint list) =
+let populateCodepoints (ctx: DbConnection) (characterId: int) (codepoints: CodePoint list) =
     for c in codepoints do
         ctx.Execute(
             "INSERT INTO Codepoints ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
             {| c with CharacterId = characterId |}
         ) |> ignore
 
-let populateKeyRadicals (ctx: DbConnection) (characterId: int) (keyRadicals: DataParsing.KeyRadical list) =
+let populateKeyRadicals (ctx: DbConnection) (characterId: int) (keyRadicals: KeyRadical list) =
     for k in keyRadicals do
         ctx.Execute(
             "INSERT INTO KeyRadicals ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
@@ -256,7 +257,7 @@ let populateStrokeMiscounts (ctx: DbConnection) (characterId: int) (strokeMiscou
             {| CharacterId = characterId; Value = s |}
         ) |> ignore
 
-let populateCharacterVariants (ctx: DbConnection) (characterId: int) (characterVariants: DataParsing.CharacterVariant list) =
+let populateCharacterVariants (ctx: DbConnection) (characterId: int) (characterVariants: CharacterVariant list) =
     for c in characterVariants do
         ctx.Execute(
             "INSERT INTO CharacterVariants ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
@@ -270,28 +271,28 @@ let populateRadicalNames (ctx: DbConnection) (characterId: int) (radicalNames: s
             {| CharacterId = characterId; Value = r |}
         ) |> ignore
 
-let populateCharacterDictionaryReferences (ctx: DbConnection) (characterId: int) (references: DataParsing.DictionaryReference list) =
+let populateCharacterDictionaryReferences (ctx: DbConnection) (characterId: int) (references: DictionaryReference list) =
     for r in references do
         ctx.Execute(
             "INSERT INTO CharacterDictionaryReferences ('CharacterId', 'IndexNumber', 'Type', 'Volume', 'Page') VALUES (@CharacterId, @IndexNumber, @Type, @Volume, @Page)",
             {| r with CharacterId = characterId |}
         ) |> ignore
 
-let populateCharacterQueryCodes (ctx: DbConnection) (characterId: int) (queryCodes: DataParsing.QueryCode list) =
+let populateCharacterQueryCodes (ctx: DbConnection) (characterId: int) (queryCodes: QueryCode list) =
     for q in queryCodes do
         ctx.Execute(
             "INSERT INTO CharacterQueryCodes ('CharacterId', 'Value', 'Type', 'SkipMisclassification') VALUES (@CharacterId, @Value, @Type, @SkipMisclassification)",
             {| q with CharacterId = characterId |}
         ) |> ignore
 
-let populateCharacterReadings (ctx: DbConnection) (characterId: int) (readings: DataParsing.CharacterReading list) =
+let populateCharacterReadings (ctx: DbConnection) (characterId: int) (readings: CharacterReading list) =
     for r in readings do
         ctx.Execute(
             "INSERT INTO CharacterReadings ('CharacterId', 'Value', 'Type') VALUES (@CharacterId, @Value, @Type)",
             {| r with CharacterId = characterId |}
         ) |> ignore
 
-let populateCharacterMeanings (ctx: DbConnection) (characterId: int) (meanings: DataParsing.CharacterMeaning list) =
+let populateCharacterMeanings (ctx: DbConnection) (characterId: int) (meanings: CharacterMeaning list) =
     for m in meanings do
         ctx.Execute(
             "INSERT INTO CharacterMeanings ('CharacterId', 'Value', 'Language') VALUES (@CharacterId, @Value, @LanguageCode)",
@@ -305,7 +306,7 @@ let populateNanori (ctx: DbConnection) (characterId: int) (nanori: string list) 
             {| CharacterId = characterId; Value = n |}
         ) |> ignore
 
-let populateKanjidic2Entries (ctx: DbConnection) (characters: DataParsing.Character seq) =
+let populateKanjidic2Entries (ctx: DbConnection) (characters: Character seq) =
     use transaction = ctx.BeginTransaction()
     for c in characters do
         ctx.Execute(
@@ -338,7 +339,7 @@ let populateCharactersRadicals (ctx: DbConnection) (radicalId: int) (characters:
             {| RadicalId = radicalId; CharacterId = getCharacterId ctx c |}
         ) |> ignore
 
-let populateRadicals (ctx: DbConnection) (radkEntries: DataParsing.RadkEntry list) =
+let populateRadicals (ctx: DbConnection) (radkEntries: RadkEntry list) =
     use transaction = ctx.BeginTransaction()
     for entry in radkEntries do
         ctx.Execute(
@@ -352,7 +353,7 @@ let populateRadicals (ctx: DbConnection) (radkEntries: DataParsing.RadkEntry lis
 let populateTables (ctx: DbConnection) =
     let jMdictEntries = DataParsing.getJMdictEntries()
     populateJMdictEntries ctx jMdictEntries
-    let jMnedictEntries = DataParsing.getJMnedictEntries()
+    let jMnedictEntries = DataParsing.getJMnedictEntries ()
     populateJMnedictEntries ctx jMnedictEntries
     let kanjidic2Info = DataParsing.getKanjidic2Info ()
     populateKanjidic2Info ctx kanjidic2Info

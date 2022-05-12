@@ -3,6 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Domain.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="DataFiles.fs" />
     <Compile Include="DataParsing.fs" />
