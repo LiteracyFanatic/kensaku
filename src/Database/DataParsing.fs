@@ -317,7 +317,7 @@ let getKanjidic2Entries () =
     streamXmlElements "character" "data/kanjidic2.xml"
     |> Seq.map (fun entry ->
         {
-            Value = Rune.GetRuneAt(entry.Element("literal").Value, 0)
+            Value = rune (entry.Element("literal").Value)
             CodePoints = parseElementList "cp_value" parseCodePoint (entry.Element("codepoint"))
             KeyRadicals = parseElementList "rad_value" parseKeyRadical (entry.Element("radical"))
             Grade = parseGrade entry
