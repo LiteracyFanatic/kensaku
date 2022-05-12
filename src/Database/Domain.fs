@@ -3,18 +3,21 @@ module Kensaku.Domain
 open System
 open System.Text
 
+[<CLIMutable>]
 type RadkEntry = {
     Radical: Rune
     StrokeCount: int
     Kanji: Set<Rune>
 }
 
+[<CLIMutable>]
 type KanjiElement = {
     Value: string
     Information: string list
     Priority: string list
 }
 
+[<CLIMutable>]
 type ReadingElement = {
     Value: string
     IsTrueReading: bool
@@ -23,17 +26,20 @@ type ReadingElement = {
     Priority: string list
 }
 
+[<CLIMutable>]
 type CrossReference = {
     Kanji: string option
     Reading: string option
     Index: int option
 }
 
+[<CLIMutable>]
 type Antonym = {
     Kanji: string option
     Reading: string option
 }
 
+[<CLIMutable>]
 type LanguageSource = {
     Value: string
     Code: string
@@ -41,12 +47,14 @@ type LanguageSource = {
     IsWasei: bool
 }
 
+[<CLIMutable>]
 type Gloss = {
     Value: string
     LanguageCode: string
     Type: string option
 }
 
+[<CLIMutable>]
 type Sense = {
     KanjiRestrictions: string list
     ReadingRestrictions: string list
@@ -61,6 +69,7 @@ type Sense = {
     Glosses: Gloss list
 }
 
+[<CLIMutable>]
 type JMdictEntry = {
     Id: int
     // Where did this come from?
@@ -70,17 +79,20 @@ type JMdictEntry = {
     Senses: Sense list
 }
 
+[<CLIMutable>]
 type TranslationContents = {
     Value: string
     LanguageCode: string
 }
 
+[<CLIMutable>]
 type Translation = {
     NameTypes: string list
     CrossReferences: CrossReference list
     Contents: TranslationContents list
 }
 
+[<CLIMutable>]
 type JMnedictEntry = {
     Id: int
     // Where did this come from?
@@ -90,27 +102,32 @@ type JMnedictEntry = {
     Translations: Translation list
 }
 
+[<CLIMutable>]
 type Kanjidic2Info = {
     FileVersion: int
     DatabaseVersion: string
     DateOfCreation: DateTime
 }
 
+[<CLIMutable>]
 type CodePoint = {
     Value: string
     Type: string
 }
 
+[<CLIMutable>]
 type KeyRadical = {
     Value: string
     Type: string
 }
 
+[<CLIMutable>]
 type CharacterVariant = {
     Value: string
     Type: string
 }
 
+[<CLIMutable>]
 type DictionaryReference = {
     IndexNumber: string
     Type: string
@@ -118,17 +135,20 @@ type DictionaryReference = {
     Page: int option
 }
 
+[<CLIMutable>]
 type QueryCode = {
     Value: string
     Type: string
     SkipMisclassification: string option
 }
 
+[<CLIMutable>]
 type CharacterReading = {
     Value: string
     Type: string
 }
 
+[<CLIMutable>]
 type CharacterMeaning = {
     Value: string
     LanguageCode: string
