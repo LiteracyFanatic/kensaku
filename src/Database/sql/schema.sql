@@ -90,7 +90,7 @@ CREATE TABLE "Senses" (
 DROP TABLE IF EXISTS "SenseKanjiElementRestrictions";
 CREATE TABLE "SenseKanjiElementRestrictions" (
     "SenseId" INTEGER NOT NULL,
-    "KanjiElement" INTEGER NOT NULL,
+    "KanjiElement" TEXT NOT NULL,
     FOREIGN KEY("SenseId") REFERENCES "Senses"("Id")
 );
 DROP TABLE IF EXISTS "ReadingElementRestrictions";
@@ -114,7 +114,7 @@ CREATE TABLE "MiscellaneousInformation" (
 DROP TABLE IF EXISTS "LanguageSources";
 CREATE TABLE "LanguageSources" (
     "SenseId" INTEGER NOT NULL,
-    "Value" TEXT,
+    "Value" TEXT NOT NULL,
     "LanguageCode" TEXT NOT NULL,
     "IsPartial" INTEGER NOT NULL,
     "IsWasei" INTEGER NOT NULL,
@@ -131,8 +131,8 @@ CREATE TABLE "Glosses" (
 DROP TABLE IF EXISTS "Antonyms";
 CREATE TABLE "Antonyms" (
     "SenseId" INTEGER NOT NULL,
-    "ReferenceKanjiElement" INTEGER,
-    "ReferenceReadingElement" INTEGER,
+    "ReferenceKanjiElement" TEXT,
+    "ReferenceReadingElement" TEXT,
     FOREIGN KEY("SenseId") REFERENCES "Senses"("Id")
 );
 -- Exclusive to JMneDict scehma
@@ -154,7 +154,7 @@ CREATE TABLE "TranslationCrossReferences" (
     "TranslationId" INTEGER NOT NULL,
     "ReferenceKanjiElement" TEXT,
     "ReferenceReadingElement" TEXT,
-    "Referencetranslation" INTEGER,
+    "ReferenceTranslation" INTEGER,
     FOREIGN KEY("TranslationId") REFERENCES "Translations"("Id")
 );
 DROP TABLE IF EXISTS "TranslationContents";
@@ -182,8 +182,8 @@ CREATE TABLE "Characters" (
     "OldJlptLevel" INTEGER,
     PRIMARY KEY("Id" AUTOINCREMENT)
 );
-DROP TABLE if EXISTS "Codepoints";
-CREATE TABLE "Codepoints" (
+DROP TABLE if EXISTS "CodePoints";
+CREATE TABLE "CodePoints" (
     "CharacterId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
     "Type" TEXT NOT NULL,

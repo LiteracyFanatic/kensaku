@@ -224,7 +224,7 @@ let parseCodePoint (el: XElement): CodePoint =
 
 let parseKeyRadical (el: XElement): KeyRadical =
     {
-        Value = el.Value
+        Value = int el.Value
         Type = el.Attribute("rad_type").Value
     }
 
