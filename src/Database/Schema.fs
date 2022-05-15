@@ -9,6 +9,8 @@ open Dapper
 open Kensaku
 open Kensaku.Database.Tables
 
+let sql (input: string) = input
+
 let createSchema (ctx: DbConnection) =
     let stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Database.sql.schema.sql")
     use sr = new StreamReader(stream)
@@ -17,7 +19,7 @@ let createSchema (ctx: DbConnection) =
     |> ignore
 
 let getLastRowId (ctx: DbConnection) =
-    ctx.QuerySingle<int>("select last_insert_rowid()")
+    ctx.QuerySingle<int>(sql "select last_insert_rowid()")
 
 let populateKanjiElementPriorities (ctx: DbConnection) (kanjiElementId: int) (priorities: string list) =
     for p in priorities do
@@ -26,7 +28,7 @@ let populateKanjiElementPriorities (ctx: DbConnection) (kanjiElementId: int) (pr
             Value = p
         }
         ctx.Execute(
-            "insert into KanjiElementPriorities ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
+            sql "insert into KanjiElementPriorities ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
             param
         ) |> ignore
 
@@ -37,7 +39,7 @@ let populateKanjiElementInformation (ctx: DbConnection) (kanjiElementId: int) (i
             Value = i
         }
         ctx.Execute(
-            "insert into KanjiElementInformation ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
+            sql "insert into KanjiElementInformation ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
             param
         ) |> ignore
 
@@ -49,7 +51,7 @@ let populateKanjiElements (ctx: DbConnection) (entryId: int) (kanjiElements: Dom
             Value = k.Value
         }
         ctx.Execute(
-            "insert into KanjiElements ('EntryId', Value) values (@EntryId, @Value)",
+            sql "insert into KanjiElements ('EntryId', Value) values (@EntryId, @Value)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -63,7 +65,7 @@ let populateReadingElementPriorities (ctx: DbConnection) (readingElementId: int)
             Value = p
         }
         ctx.Execute(
-            "insert into ReadingElementPriorities ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementPriorities ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
             param
         ) |> ignore
 
@@ -74,7 +76,7 @@ let populateReadingElementInformation (ctx: DbConnection) (readingElementId: int
             Value = i
         }
         ctx.Execute(
-            "insert into ReadingElementInformation ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementInformation ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
             param
         ) |> ignore
 
@@ -85,7 +87,7 @@ let populateReadingElementRestrictions (ctx: DbConnection) (readingElementId: in
             Value = r
         }
         ctx.Execute(
-            "insert into ReadingElementRestrictions ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementRestrictions ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
             param
         ) |> ignore
 
@@ -98,7 +100,7 @@ let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements:
             IsTrueReading = r.IsTrueReading
         }
         ctx.Execute(
-            "insert into ReadingElements ('EntryId', Value, 'IsTrueReading') values (@EntryId, @Value, @IsTrueReading)",
+            sql "insert into ReadingElements ('EntryId', Value, 'IsTrueReading') values (@EntryId, @Value, @IsTrueReading)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -114,7 +116,7 @@ let populateAntonyms (ctx: DbConnection) (senseId: int) (antonyms: Domain.Antony
             ReferenceReadingElement = a.Reading
         }
         ctx.Execute(
-            "insert into Antonyms ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement') values(@SenseId, @ReferenceKanjiElement, @ReferenceReadingElement)",
+            sql "insert into Antonyms ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement') values(@SenseId, @ReferenceKanjiElement, @ReferenceReadingElement)",
             param
         ) |> ignore
 
@@ -125,7 +127,7 @@ let populateFields (ctx: DbConnection) (senseId: int) (fields: string list) =
             Value = f
         }
         ctx.Execute(
-            "insert into Fields ('SenseId', Value) values (@SenseId, @Value)",
+            sql "insert into Fields ('SenseId', Value) values (@SenseId, @Value)",
             param
         ) |> ignore
 
@@ -136,7 +138,7 @@ let populateDialects (ctx: DbConnection) (senseId: int) (dialects: string list) 
             Value = d
         }
         ctx.Execute(
-            "insert into Dialects ('SenseId', Value) values (@SenseId, @Value)",
+            sql "insert into Dialects ('SenseId', Value) values (@SenseId, @Value)",
             param
         ) |> ignore
 
@@ -147,7 +149,7 @@ let populateMiscellaneousInformation (ctx: DbConnection) (senseId: int) (miscell
             Value = m
         }
         ctx.Execute(
-            "insert into MiscellaneousInformation ('SenseId', Value) values (@SenseId, @Value)",
+            sql "insert into MiscellaneousInformation ('SenseId', Value) values (@SenseId, @Value)",
             param
         ) |> ignore
 
@@ -158,7 +160,7 @@ let populateAdditionalInformation (ctx: DbConnection) (senseId: int) (additional
             Value = a
         }
         ctx.Execute(
-            "insert into SenseInformation ('SenseId', Value) values (@SenseId, @Value)",
+            sql "insert into SenseInformation ('SenseId', Value) values (@SenseId, @Value)",
             param
         ) |> ignore
 
@@ -172,7 +174,7 @@ let populateLanguageSources (ctx: DbConnection) (senseId: int) (languageSources:
             IsWasei = l.IsWasei
         }
         ctx.Execute(
-            "insert into LanguageSources ('SenseId', Value, 'LanguageCode', 'IsPartial', 'IsWasei') values (@SenseId, @Value, @LanguageCode, @IsPartial, @IsWasei)",
+            sql "insert into LanguageSources ('SenseId', Value, 'LanguageCode', 'IsPartial', 'IsWasei') values (@SenseId, @Value, @LanguageCode, @IsPartial, @IsWasei)",
             param
         ) |> ignore
 
@@ -183,7 +185,7 @@ let populatePartsOfSpeech (ctx: DbConnection) (senseId: int) (partsOfSpeech: str
             Value = p
         }
         ctx.Execute(
-            "insert into PartsOfSpeech ('SenseId', Value) values (@SenseId, @Value)",
+            sql "insert into PartsOfSpeech ('SenseId', Value) values (@SenseId, @Value)",
             param
         ) |> ignore
 
@@ -196,7 +198,7 @@ let populateGlosses (ctx: DbConnection) (senseId: int) (glosses: Domain.Gloss li
             Type = g.Type
         }
         ctx.Execute(
-            "insert into Glosses ('SenseId', Value, 'Language', 'Type') values (@SenseId, @Value, @Language, @Type)",
+            sql "insert into Glosses ('SenseId', Value, 'Language', 'Type') values (@SenseId, @Value, @Language, @Type)",
             param
         ) |> ignore
 
@@ -207,7 +209,7 @@ let populateSenseKanjiElementRestrictions (ctx: DbConnection) (senseId: int) (re
             KanjiElement = r
         }
         ctx.Execute(
-            "insert into SenseKanjiElementRestrictions ('SenseId', 'KanjiElement') values (@SenseId, @KanjiElement)",
+            sql "insert into SenseKanjiElementRestrictions ('SenseId', 'KanjiElement') values (@SenseId, @KanjiElement)",
             param
         ) |> ignore
 
@@ -218,7 +220,7 @@ let populateSenseReadingElementRestrictions (ctx: DbConnection) (senseId: int) (
             ReadingElement = r
         }
         ctx.Execute(
-            "insert into SenseReadingElementRestrictions ('SenseId', 'ReadingElement') values (@SenseId, @ReadingElement)",
+            sql "insert into SenseReadingElementRestrictions ('SenseId', 'ReadingElement') values (@SenseId, @ReadingElement)",
             param
         ) |> ignore
 
@@ -231,7 +233,7 @@ let populateSenseCrossReferences (ctx: DbConnection) (senseId: int) (crossRefere
             ReferenceSense = c.Index
         }
         ctx.Execute(
-            "insert into SenseCrossReferences ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceSense') values (@SenseId, @ReferenceKanjiElement, @ReferenceReadingElement, @ReferenceSense)",
+            sql "insert into SenseCrossReferences ('SenseId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceSense') values (@SenseId, @ReferenceKanjiElement, @ReferenceReadingElement, @ReferenceSense)",
             param
         ) |> ignore
 
@@ -242,7 +244,7 @@ let populateSenses (ctx: DbConnection) (entryId: int) (senses: Domain.Sense list
             EntryId = entryId
         }
         ctx.Execute(
-            "insert into Senses ('EntryId') values (@EntryId)",
+            sql "insert into Senses ('EntryId') values (@EntryId)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -266,7 +268,7 @@ let populateJMdictEntries (ctx: DbConnection) (jMdictEntries: Domain.JMdictEntry
             IsProperName = entry.IsProperName
         }
         ctx.Execute(
-            "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
+            sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -282,7 +284,7 @@ let populateNameTypes (ctx: DbConnection) (translationId: int) (nameTypes: strin
             Value = n
         }
         ctx.Execute(
-            "insert into NameTypes ('TranslationId', Value) values (@TranslationId, @Value)",
+            sql "insert into NameTypes ('TranslationId', Value) values (@TranslationId, @Value)",
             param
         ) |> ignore
 
@@ -295,7 +297,7 @@ let populateTranslationCrossReferences (ctx: DbConnection) (translationId: int) 
             ReferenceTranslation = c.Index
         }
         ctx.Execute(
-            "insert into TranslationCrossReferences ('TranslationId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceTranslation') values (@TranslationId, @ReferenceKanjiElement, @ReferenceReadingElement, @ReferenceTranslation)",
+            sql "insert into TranslationCrossReferences ('TranslationId', 'ReferenceKanjiElement', 'ReferenceReadingElement', 'ReferenceTranslation') values (@TranslationId, @ReferenceKanjiElement, @ReferenceReadingElement, @ReferenceTranslation)",
             param
         ) |> ignore
 
@@ -307,7 +309,7 @@ let populateTranslationContents (ctx: DbConnection) (translationId: int) (conten
             Language = c.LanguageCode
         }
         ctx.Execute(
-            "insert into TranslationContents ('TranslationId', Value, 'Language') values (@TranslationId, @Value, @Language)",
+            sql "insert into TranslationContents ('TranslationId', Value, 'Language') values (@TranslationId, @Value, @Language)",
             param
         ) |> ignore
 
@@ -318,7 +320,7 @@ let populateTranslations (ctx: DbConnection) (entryId: int) (translations: Domai
             EntryId = entryId
         }
         ctx.Execute(
-            "insert into Translations ('EntryId') values (@EntryId)",
+            sql "insert into Translations ('EntryId') values (@EntryId)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -334,7 +336,7 @@ let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: Domain.JMnedic
             IsProperName = entry.IsProperName
         }
         ctx.Execute(
-            "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
+            sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -351,7 +353,7 @@ let populateKanjidic2Info (ctx: DbConnection) (info: Domain.Kanjidic2Info) =
         DateOfCreation = info.DateOfCreation
     }
     ctx.Execute(
-        "insert into Kanjidic2Info ('FileVersion', 'DatabaseVersion', 'DateOfCreation') values (@FileVersion, @DatabaseVersion, @DateOfCreation)",
+        sql "insert into Kanjidic2Info ('FileVersion', 'DatabaseVersion', 'DateOfCreation') values (@FileVersion, @DatabaseVersion, @DateOfCreation)",
         param
     ) |> ignore
     transaction.Commit()
@@ -364,7 +366,7 @@ let populateCodepoints (ctx: DbConnection) (characterId: int) (codepoints: Domai
             Type = c.Type
         }
         ctx.Execute(
-            "insert into CodePoints ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
+            sql "insert into CodePoints ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
             param
         ) |> ignore
 
@@ -376,7 +378,7 @@ let populateKeyRadicals (ctx: DbConnection) (characterId: int) (keyRadicals: Dom
             Type = k.Type
         }
         ctx.Execute(
-            "insert into KeyRadicals ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
+            sql "insert into KeyRadicals ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
             param
         ) |> ignore
 
@@ -387,7 +389,7 @@ let populateStrokeMiscounts (ctx: DbConnection) (characterId: int) (strokeMiscou
             Value = s
         }
         ctx.Execute(
-            "insert into StrokeMiscounts ('CharacterId', Value) values (@CharacterId, @Value)",
+            sql "insert into StrokeMiscounts ('CharacterId', Value) values (@CharacterId, @Value)",
             param
         ) |> ignore
 
@@ -399,7 +401,7 @@ let populateCharacterVariants (ctx: DbConnection) (characterId: int) (characterV
             Type = c.Type
         }
         ctx.Execute(
-            "insert into CharacterVariants ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
+            sql "insert into CharacterVariants ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
             param
         ) |> ignore
 
@@ -410,7 +412,7 @@ let populateRadicalNames (ctx: DbConnection) (characterId: int) (radicalNames: s
             Value = r
         }
         ctx.Execute(
-            "insert into RadicalNames ('CharacterId', Value) values (@CharacterId, @Value)",
+            sql "insert into RadicalNames ('CharacterId', Value) values (@CharacterId, @Value)",
             param
         ) |> ignore
 
@@ -424,7 +426,7 @@ let populateCharacterDictionaryReferences (ctx: DbConnection) (characterId: int)
             Page = r.Page
         }
         ctx.Execute(
-            "insert into CharacterDictionaryReferences ('CharacterId', 'IndexNumber', 'Type', 'Volume', 'Page') values (@CharacterId, @IndexNumber, @Type, @Volume, @Page)",
+            sql "insert into CharacterDictionaryReferences ('CharacterId', 'IndexNumber', 'Type', 'Volume', 'Page') values (@CharacterId, @IndexNumber, @Type, @Volume, @Page)",
             param
         ) |> ignore
 
@@ -437,7 +439,7 @@ let populateCharacterQueryCodes (ctx: DbConnection) (characterId: int) (queryCod
             SkipMisclassification = q.SkipMisclassification
         }
         ctx.Execute(
-            "insert into CharacterQueryCodes ('CharacterId', Value, 'Type', 'SkipMisclassification') values (@CharacterId, @Value, @Type, @SkipMisclassification)",
+            sql "insert into CharacterQueryCodes ('CharacterId', Value, 'Type', 'SkipMisclassification') values (@CharacterId, @Value, @Type, @SkipMisclassification)",
             param
         ) |> ignore
 
@@ -449,7 +451,7 @@ let populateCharacterReadings (ctx: DbConnection) (characterId: int) (readings: 
             Type = r.Type
         }
         ctx.Execute(
-            "insert into CharacterReadings ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
+            sql "insert into CharacterReadings ('CharacterId', Value, 'Type') values (@CharacterId, @Value, @Type)",
             param
         ) |> ignore
 
@@ -461,7 +463,7 @@ let populateCharacterMeanings (ctx: DbConnection) (characterId: int) (meanings: 
             Language = m.LanguageCode
         }
         ctx.Execute(
-            "insert into CharacterMeanings ('CharacterId', Value, 'Language') values (@CharacterId, @Value, @Language)",
+            sql "insert into CharacterMeanings ('CharacterId', Value, 'Language') values (@CharacterId, @Value, @Language)",
             param
         ) |> ignore
 
@@ -472,7 +474,7 @@ let populateNanori (ctx: DbConnection) (characterId: int) (nanori: string list) 
             Value = n
         }
         ctx.Execute(
-            "insert into Nanori ('CharacterId', Value) values (@CharacterId, @Value)",
+            sql "insert into Nanori ('CharacterId', Value) values (@CharacterId, @Value)",
             param
         ) |> ignore
 
@@ -489,7 +491,7 @@ let populateKanjidic2Entries (ctx: DbConnection) (characters: Domain.Character s
             OldJlptLevel = c.OldJlptLevel
         }
         ctx.Execute(
-            "insert into Characters (Value, 'Grade', 'StrokeCount', 'Frequency', 'IsRadical', 'OldJlptLevel') values (@Value, @Grade, @StrokeCount, @Frequency, @IsRadical, @OldJlptLevel)",
+            sql "insert into Characters (Value, 'Grade', 'StrokeCount', 'Frequency', 'IsRadical', 'OldJlptLevel') values (@Value, @Grade, @StrokeCount, @Frequency, @IsRadical, @OldJlptLevel)",
             param
         ) |> ignore
         let id = getLastRowId ctx
@@ -514,7 +516,7 @@ let getCharacterId (ctx: DbConnection) (character: Rune) =
 let populateCharactersRadicals (ctx: DbConnection) (radicalId: int) (characters: Set<Rune>) =
     for c in characters do
         ctx.Execute(
-            "insert into Characters_Radicals ('CharacterId', 'RadicalId') values (@CharacterId, @RadicalId)",
+            sql "insert into Characters_Radicals ('CharacterId', 'RadicalId') values (@CharacterId, @RadicalId)",
             { RadicalId = radicalId; CharacterId = getCharacterId ctx c }
         ) |> ignore
 
@@ -527,7 +529,7 @@ let populateRadicals (ctx: DbConnection) (radkEntries: Domain.RadkEntry list) =
             StrokeCount = entry.StrokeCount
         }
         ctx.Execute(
-            "insert into Radicals (Value, 'StrokeCount') values (@Value, @StrokeCount)",
+            sql "insert into Radicals (Value, 'StrokeCount') values (@Value, @StrokeCount)",
             param
         ) |> ignore
         let id = getLastRowId ctx
