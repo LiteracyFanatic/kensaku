@@ -298,7 +298,10 @@ let parseCharacterMeanings (el: XElement) =
         parseElementList "meaning" (fun el ->
             {
                 Value = el.Value
-                LanguageCode = parseLanguageCode el
+                LanguageCode =
+                    match el.Attribute("m_lang") with
+                    | null -> "en"
+                    | l -> l.Value
             }
         ) (rm.Element("rmgroup"))
 
