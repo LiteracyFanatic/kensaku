@@ -30,3 +30,5 @@ let isJapanese (c: char) =
 
 let inline rune input =
     Rune.GetRuneAt(string input, 0)
+
+let sql (input: string) = input

@@ -9,8 +9,6 @@ open Dapper
 open Kensaku
 open Kensaku.Database.Tables
 
-let sql (input: string) = input
-
 let createSchema (ctx: DbConnection) =
     let stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Database.sql.schema.sql")
     use sr = new StreamReader(stream)
