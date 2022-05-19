@@ -1,5 +1,4 @@
 open System.Text
-open System.Text.RegularExpressions
 open System.Reflection
 open System.Linq
 open Microsoft.Data.Sqlite
@@ -92,6 +91,163 @@ let validateKanjiArgs (args: ParseResults<KanjiArgs>) =
     validateStrokeArgs args
     validateAtLeastOneArg args
 
+let printReferenceType (referenceType: string) =
+    match referenceType with
+    | "nelson_c" -> "Modern Reader's Japanese-English Character Dictionary edited by Andrew Nelson"
+    | "nelson_n" -> "The New Nelson Japanese-English Character Dictionary edited by John Haig"
+    | "halpern_njecd" -> "New Japanese-English Character Dictionary edited by Jack Halpern"
+    | "halpern_kkd" -> "Kodansha Kanji Dictionary (2nd Ed. of the NJECD) edited by Jack Halpern"
+    | "halpern_kkld" -> "Kanji Learners Dictionary Kodansha) edited by Jack Halpern"
+    | "halpern_kkld_2ed" -> "Kanji Learners Dictionary (Kodansha), 2nd edition (2013) edited by Jack Halpern"
+    | "heisig" -> "Remembering The Kanji by James Heisig"
+    | "heisig6" -> "Remembering The Kanji, Sixth Ed. by James Heisig"
+    | "gakken" -> "A New Dictionary of Kanji Usage (Gakken)"
+    | "oneill_names" -> "Japanese Names by P.G. O'Neill"
+    | "oneill_kk" -> "Essential Kanji by P.G. O'Neill"
+    | "moro" -> "Daikanwajiten compiled by Morohashi"
+    | "henshall" -> "A Guide To Remembering Japanese Characters by Kenneth G. Henshall"
+    | "sh_kk" -> "Kanji and Kana by Spahn and Hadamitzky"
+    | "sh_kk2" -> "Kanji and Kana by Spahn and Hadamitzky (2011 edition)"
+    | "sakade" -> "A Guide To Reading and Writing Japanese edited by Florence Sakade"
+    | "jf_cards" -> "Japanese Kanji Flashcards by Max Hodges and Tomoko Okazaki (Series 1)"
+    | "henshall3" -> "A Guide To Reading and Writing Japanese 3rd edition, edited by Henshall, Seeley and De Groot"
+    | "tutt_cards" -> "Tuttle Kanji Cards compiled by Alexander Kask"
+    | "crowley" -> "The Kanji Way to Japanese Language Power by Dale Crowley"
+    | "kanji_in_context" -> "Kanji in Context by Nishiguchi and Kono"
+    | "busy_people" -> "Japanese For Busy People vols I-III, published by the AJLT"
+    | "kodansha_compact" -> "Kodansha Compact Kanji Guide"
+    | "maniette" -> "Les Kanjis dans la tete adapted from Heisig to French by Yves Maniette"
+    | x -> x
+
+let printVariantType (variantType: string) =
+    match variantType with
+    | "jis208" -> "JIS X 0208"
+    | "jis212" -> "JIS X 0212"
+    | "jis213" -> "JIS X 0213"
+    | "deroo" -> "De Roo number"
+    | "njecd" -> "Halpern NJECD index number"
+    | "s_h" -> "The Kanji Dictionary (Spahn & Hadamitzky) descriptor"
+    | "nelson_c" -> "Modern Reader's Japanese-English Character Dictionary edited by Andrew Nelson number"
+    | "oneill" -> "Japanese Names (O'Neill) number"
+    | "ucs" -> "Unicode"
+    | x -> x
+
+let printKanji (kanji: GetKanjiQueryResult) =
+    let sb = StringBuilder()
+
+    sb.AppendLine($"Kanji: %A{kanji.Value}") |> ignore
+
+    sb.Append($"Grade: ") |> ignore
+    match kanji.Grade with
+    | Some grade -> sb.AppendLine(string grade) |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.Append($"Stroke Count: %i{kanji.StrokeCount}") |> ignore
+    match kanji.StrokeMiscounts with
+    | [] -> sb.AppendLine() |> ignore
+    | miscounts ->
+        miscounts
+        |> List.map string
+        |> List.reduce (sprintf "%s, %s")
+        |> sprintf " (%s)"
+        |> sb.AppendLine
+        |> ignore
+
+    sb.Append("Frequency: ") |> ignore
+    match kanji.Frequency with
+    | Some frequency -> sb.AppendLine(string frequency) |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.AppendLine($"Readings:") |> ignore
+    for reading in kanji.CharacterReadings.Kunyomi do
+        sb.AppendLine($"    %s{reading} (kun)") |> ignore
+    for reading in kanji.CharacterReadings.Onyomi do
+        sb.AppendLine($"    %s{reading} (on)") |> ignore
+
+    sb.AppendLine($"Nanori:") |> ignore
+    for reading in kanji.Nanori do
+        sb.AppendLine($"    %s{reading}") |> ignore
+
+    sb.AppendLine($"Meanings:") |> ignore
+    for meaning in kanji.CharacterMeanings do
+        sb.AppendLine($"    %s{meaning}") |> ignore
+
+    sb.AppendLine("Character Codes:") |> ignore
+
+    sb.Append($"    SKIP: ") |> ignore
+    match kanji.CharacterCodes.Skip with
+    | Some skip ->
+        sb.Append(skip) |> ignore
+        match kanji.CharacterCodes.SkipMisclassifications with
+        | [] -> sb.AppendLine() |> ignore
+        | misclassifications ->
+            misclassifications
+            |> List.map (fun misclassification ->
+                match misclassification with
+                | Position x -> $"%s{x} (position)"
+                | StrokeCount x -> $"%s{x} (stroke count)"
+                | StrokeAndPosition x -> $"%s{x} (stroke count and position)"
+                | StrokeDifference x -> $"%s{x} (stroke difference)")
+            |> List.reduce (sprintf "%s, %s")
+            |> sprintf " (%s)"
+            |> sb.AppendLine
+            |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.Append($"    SH: ") |> ignore
+    match kanji.CharacterCodes.ShDesc with
+    | Some sh -> sb.AppendLine(sh) |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.Append($"    Four Corner: ") |> ignore
+    match kanji.CharacterCodes.FourCorner with
+    | Some fourCorner -> sb.AppendLine(fourCorner) |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.Append($"    DeRoo: ") |> ignore
+    match kanji.CharacterCodes.DeRoo with
+    | Some deroo -> sb.AppendLine(deroo) |> ignore
+    | None -> sb.AppendLine("-") |> ignore
+
+    sb.Append("Radicals: ") |> ignore
+    for radical in kanji.Radicals do
+        sb.Append(radical) |> ignore
+    sb.AppendLine() |> ignore
+
+    sb.Append($"Key Radical: %i{kanji.KeyRadicals.KanjiX}") |> ignore
+    match kanji.KeyRadicals.Nelson with
+    | Some nelsonRadical -> sb.AppendLine($" %i{nelsonRadical}") |> ignore
+    | None -> sb.AppendLine() |> ignore
+
+    sb.AppendLine("References:") |> ignore
+    for reference in kanji.DictionaryReferences do
+        let dictionaryName = printReferenceType reference.Type
+        sb.Append($"    index %s{reference.IndexNumber}") |> ignore
+        if reference.Page.IsSome then
+            sb.Append($", page %i{reference.Page.Value}") |> ignore
+        if reference.Page.IsSome then
+            sb.Append($", volume %i{reference.Volume.Value}") |> ignore
+        sb.AppendLine($" - %s{dictionaryName}") |> ignore
+
+    sb.AppendLine("Codepoints:") |> ignore
+    sb.AppendLine($"    Unicode: %s{kanji.CodePoints.Ucs}") |> ignore
+    if kanji.CodePoints.Jis208.IsSome then
+        sb.AppendLine($"    JIS X 0208: %s{kanji.CodePoints.Jis208.Value}") |> ignore
+    if kanji.CodePoints.Jis212.IsSome then
+        sb.AppendLine($"    JIS X 0212: %s{kanji.CodePoints.Jis212.Value}") |> ignore
+    if kanji.CodePoints.Jis213.IsSome then
+        sb.AppendLine($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}") |> ignore
+
+    sb.AppendLine("Variants:") |> ignore
+    for variant in kanji.Variants do
+        let character =
+            variant.Character
+            |> Option.defaultValue (rune "□")
+        let variantType = printVariantType variant.Type
+        sb.AppendLine($"    %A{character} %s{variant.Value} (%s{variantType})") |> ignore
+
+    sb.ToString()
+
 let kanjiHandler (args: ParseResults<KanjiArgs>) =
     validateKanjiArgs args
 
@@ -124,8 +280,10 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
     Database.Schema.registerRegexpFunction ctx
     Database.Schema.registerTypeHandlers ()
     let kanji = getKanji query ctx
-    for k in kanji do
-        printfn "%A" k
+    kanji
+    |> List.map printKanji
+    |> List.reduce (sprintf "%s\n%s")
+    |> printf "%s"
 
 type Args =
     | [<CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
