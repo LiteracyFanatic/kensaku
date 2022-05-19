@@ -21,6 +21,7 @@ type KanjiArgs =
     | Nanori of string
     | Common_Only
     | Pattern of string
+    | [<MainCommand; Last>] Kanji of string list
     interface IArgParserTemplate with
         member this.Usage =
             match this with
@@ -38,6 +39,7 @@ type KanjiArgs =
             | Nanori _ -> "search for kanji with the given reading when used in names"
             | Common_Only -> "include only the 2,500 most common kanji in the search"
             | Pattern _ -> "search for kanji that appear in words matching the given pattern"
+            | Kanji _ -> "show info for the given kanji"
 
 let makeWordList (words: string list) =
     let sb = StringBuilder()
@@ -86,10 +88,15 @@ let validateAtLeastOneArg (args: ParseResults<'a>) =
     if args.GetAllResults().Length = 0 then
         args.Raise("You must specify at least one search option")
 
+let validateNoOtherSearchOptionsWithLiteralKanji (args: ParseResults<KanjiArgs>) =
+    if args.Contains(Kanji) && args.GetAllResults().Length > 1 then
+        args.Raise("You can not use other search options when passing a literal kanji")
+
 let validateKanjiArgs (args: ParseResults<KanjiArgs>) =
     validateCodeArgs args
     validateStrokeArgs args
     validateAtLeastOneArg args
+    validateNoOtherSearchOptionsWithLiteralKanji args
 
 let printReferenceType (referenceType: string) =
     match referenceType with
@@ -251,35 +258,43 @@ let printKanji (kanji: GetKanjiQueryResult) =
 let kanjiHandler (args: ParseResults<KanjiArgs>) =
     validateKanjiArgs args
 
-    let minStrokeCount, maxStrokeCount =
-        match args.TryGetResult Strokes with
-        | Some n -> Some n, Some n
-        | None -> args.TryGetResult Min_Strokes, args.TryGetResult Max_Strokes
-    let query = {
-        MinStrokeCount = minStrokeCount
-        MaxStrokeCount = maxStrokeCount
-        IncludeStrokeMiscounts = args.Contains Include_Stroke_Miscounts
-        SearchRadicals =
-            args.TryGetResult Radicals
-            |> Option.map (fun radicals -> radicals.EnumerateRunes() |> Seq.toList)
-            |> Option.defaultValue []
-        CharacterCode =
-            args.TryGetResult Skip_Code
-            |> Option.map SkipCode
-            |> Option.orElseWith (fun () -> args.TryGetResult Sh_Code |> Option.map ShDescCode)
-            |> Option.orElseWith (fun () -> args.TryGetResult Four_Corner_Code |> Option.map FourCornerCode)
-            |> Option.orElseWith (fun () -> args.TryGetResult Deroo_Code |> Option.map DeRooCode)
-        CharacterReading = args.TryGetResult Reading
-        CharacterMeaning = args.TryGetResult Meaning
-        Nanori = args.TryGetResult Nanori
-        CommonOnly = args.Contains Common_Only
-        Pattern = args.TryGetResult Pattern
-        KeyRadical = None
-    }
     use ctx = new SqliteConnection("Data Source=data/kensaku.db")
-    Database.Schema.registerRegexpFunction ctx
     Database.Schema.registerTypeHandlers ()
-    let kanji = getKanji query ctx
+    Database.Schema.registerRegexpFunction ctx
+
+    let kanji =
+        match args.TryGetResult(Kanji) with
+        | Some kanji ->
+            let runes = List.map rune kanji
+            getKanjiLiterals runes ctx
+        | None ->
+            let minStrokeCount, maxStrokeCount =
+                match args.TryGetResult Strokes with
+                | Some n -> Some n, Some n
+                | None -> args.TryGetResult Min_Strokes, args.TryGetResult Max_Strokes
+            let query = {
+                MinStrokeCount = minStrokeCount
+                MaxStrokeCount = maxStrokeCount
+                IncludeStrokeMiscounts = args.Contains Include_Stroke_Miscounts
+                SearchRadicals =
+                    args.TryGetResult Radicals
+                    |> Option.map (fun radicals -> radicals.EnumerateRunes() |> Seq.toList)
+                    |> Option.defaultValue []
+                CharacterCode =
+                    args.TryGetResult Skip_Code
+                    |> Option.map SkipCode
+                    |> Option.orElseWith (fun () -> args.TryGetResult Sh_Code |> Option.map ShDescCode)
+                    |> Option.orElseWith (fun () -> args.TryGetResult Four_Corner_Code |> Option.map FourCornerCode)
+                    |> Option.orElseWith (fun () -> args.TryGetResult Deroo_Code |> Option.map DeRooCode)
+                CharacterReading = args.TryGetResult Reading
+                CharacterMeaning = args.TryGetResult Meaning
+                Nanori = args.TryGetResult Nanori
+                CommonOnly = args.Contains Common_Only
+                Pattern = args.TryGetResult Pattern
+                KeyRadical = None
+            }
+            getKanji query ctx
+
     kanji
     |> List.map printKanji
     |> List.reduce (sprintf "%s\n%s")

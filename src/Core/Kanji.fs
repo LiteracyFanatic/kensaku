@@ -205,6 +205,14 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
         param = GetKanjiQueryParams.FromQuery(query))
     |> Seq.toList
 
+let getIdsForKanjiLiterals (kanji: Rune list) (ctx: DbConnection) =
+    ctx.Query<int>(
+        sql "select Id from Characters where Value in @Kanji",
+        {|
+            Kanji = List.map string kanji
+        |})
+    |> Seq.toList
+
 let getKanjiByIds (ids: int list) (ctx: DbConnection) =
     let param = {|
         Ids = ids
@@ -421,10 +429,14 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             Frequency = character.Frequency
             IsRadical = character.IsRadical
             OldJlptLevel = character.OldJlptLevel
-        }
-    )
+        })
 
 let getKanji (query: GetKanjiQuery) (ctx: DbConnection) =
     let ids = getKanjiIds query ctx
+    let kanji = getKanjiByIds ids ctx
+    kanji
+
+let getKanjiLiterals (kanji: Rune list) (ctx: DbConnection) =
+    let ids = getIdsForKanjiLiterals kanji ctx
     let kanji = getKanjiByIds ids ctx
     kanji
