@@ -35,6 +35,7 @@ type GetKanjiQuery = {
     SearchRadicals: Rune list
     CharacterCode: CharacterCode option
     CharacterReading: string option
+    CharacterMeaning: string option
     Nanori: string option
     CommonOnly: bool
     Pattern: string option
@@ -47,6 +48,7 @@ type GetKanjiQueryParams = {
     IncludeStrokeMiscounts: bool
     CharacterCode: string option
     CharacterReading: string option
+    CharacterMeaning: string option
     Nanori: string option
     CommonOnly: bool
     Pattern: string option
@@ -60,6 +62,7 @@ with
             IncludeStrokeMiscounts = query.IncludeStrokeMiscounts
             CharacterCode = query.CharacterCode |> Option.map (fun cc -> cc.Value)
             CharacterReading = query.CharacterReading
+            CharacterMeaning = query.CharacterMeaning
             Nanori = query.Nanori
             CommonOnly = query.CommonOnly
             Pattern = query.Pattern
@@ -165,6 +168,7 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
             left join CharacterQueryCodes as cqc on cqc.CharacterId = c.Id
             left join StrokeMiscounts as sm on sm.CharacterId = c.Id
             left join CharacterReadings as cr on cr.CharacterId = c.Id and cr.Type in ('ja_on', 'ja_kun')
+            left join CharacterMeanings as cm on cm.CharacterId = c.Id and cm.Language = 'en'
             left join Nanori as n on n.CharacterId = c.Id
             left join KeyRadicals as kr on kr.CharacterId = c.Id
             where true
@@ -172,6 +176,7 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
             and (@MaxStrokeCount is null or c.StrokeCount <= @MaxStrokeCount or (@IncludeStrokeMiscounts and sm.Value <= @MaxStrokeCount))
             and %s{makeCharacterCodeCondition query.CharacterCode}
             and (@CharacterReading is null or cr.Value = @CharacterReading)
+            and (@CharacterMeaning is null or cm.Value regexp @CharacterMeaning)
             and (@Nanori is null or n.Value = @Nanori)
             and (not @CommonOnly or c.Frequency is not null)
             and %s{makePatternCondition query.Pattern}

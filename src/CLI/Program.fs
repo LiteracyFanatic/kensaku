@@ -18,6 +18,7 @@ type KanjiArgs =
     | Four_Corner_Code of string
     | Deroo_Code of string
     | Reading of string
+    | Meaning of string
     | Nanori of string
     | Common_Only
     | Pattern of string
@@ -34,6 +35,7 @@ type KanjiArgs =
             | Four_Corner_Code _ -> "search for kanji with the given Four Corner code"
             | Deroo_Code _ -> """search for kanji with the given code from "2001 Kanji" (Bonjinsha) by Father Joseph De Roo"""
             | Reading _ -> "search for kanji with the given reading"
+            | Meaning _ -> "search for kanji with a meaning that matches the given regular expression"
             | Nanori _ -> "search for kanji with the given reading when used in names"
             | Common_Only -> "include only the 2,500 most common kanji in the search"
             | Pattern _ -> "search for kanji that appear in words matching the given pattern"
@@ -112,6 +114,7 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
             |> Option.orElseWith (fun () -> args.TryGetResult Four_Corner_Code |> Option.map FourCornerCode)
             |> Option.orElseWith (fun () -> args.TryGetResult Deroo_Code |> Option.map DeRooCode)
         CharacterReading = args.TryGetResult Reading
+        CharacterMeaning = args.TryGetResult Meaning
         Nanori = args.TryGetResult Nanori
         CommonOnly = args.Contains Common_Only
         Pattern = args.TryGetResult Pattern
