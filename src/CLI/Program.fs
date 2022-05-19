@@ -1,4 +1,5 @@
 open System.Text
+open System.Text.RegularExpressions
 open System.Reflection
 open System.Linq
 open Microsoft.Data.Sqlite
@@ -117,6 +118,8 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
         KeyRadical = None
     }
     use ctx = new SqliteConnection("Data Source=data/kensaku.db")
+    Database.Schema.registerRegexpFunction ctx
+    Database.Schema.registerTypeHandlers ()
     let kanji = getKanji query ctx
     for k in kanji do
         printfn "%A" k
@@ -133,7 +136,6 @@ type Args =
 [<EntryPoint>]
 let main argv =
     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-    Database.Schema.registerTypeHandlers ()
     let parser =
         ArgumentParser.Create<Args>(
             programName = "kensaku",

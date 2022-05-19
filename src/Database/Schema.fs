@@ -3,9 +3,11 @@ module Kensaku.Database.Schema
 open System
 open System.IO
 open System.Text
+open System.Text.RegularExpressions
 open System.Reflection
 open System.Data.Common
 open Dapper
+open Microsoft.Data.Sqlite
 open Kensaku
 open Kensaku.Database.Tables
 
@@ -601,3 +603,9 @@ let registerTypeHandlers () =
     SqlMapper.AddTypeHandler(RuneHandler())
     SqlMapper.AddTypeHandler(Int32Handler())
     SqlMapper.AddTypeHandler(Int32OptionHandler())
+
+let regexpFunction (pattern: string) (input: string) =
+    not (isNull input) && Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase)
+
+let registerRegexpFunction (ctx: SqliteConnection) =
+    ctx.CreateFunction("regexp", regexpFunction)
