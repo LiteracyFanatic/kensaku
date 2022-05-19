@@ -83,6 +83,14 @@ type SkipMisclassification =
             | "stroke_diff" -> StrokeDifference skipCode
             | _ -> failwith $"Invalid SKIP misclassification type: %s{misclassificationType}"
 
+[<CLIMutable>]
+type CharacterVariant = {
+    CharacterId: int
+    Type: string
+    Value: string
+    Character: Rune option
+}
+
 type GetKanjiQueryResult = {
     Id: int
     Value: Rune
@@ -107,7 +115,7 @@ type GetKanjiQueryResult = {
         Nelson: int option
     |}
     DictionaryReferences: Tables.CharacterDictionaryReference list
-    Variants: Tables.CharacterVariant list
+    Variants: CharacterVariant list
     CodePoints: {|
         Ucs: string
         Jis208: string option
@@ -258,8 +266,13 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
     let characterVariants =
-        ctx.Query<Tables.CharacterVariant>(
-            sql "select * from CharacterVariants where CharacterId in @Ids",
+        ctx.Query<CharacterVariant>(
+            sql "
+            select cv.*, c.Value as Character
+            from CharacterVariants as cv
+            left join CodePoints as cp on cp.Type = cv.Type and cp.Value = cv.Value
+            left join Characters as c on c.Id = cp.CharacterId
+            where cv.CharacterId in @Ids",
             param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
