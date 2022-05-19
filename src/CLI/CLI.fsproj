@@ -19,4 +19,12 @@
     <ProjectReference Include="../Database/Database.fsproj" />
     <ProjectReference Include="../Core/Core.fsproj" />
   </ItemGroup>
+  <Target Name="SetGitTag" BeforeTargets="BeforeBuild">
+    <Exec Command="git describe --always" ConsoleToMSBuild="True" StandardOutputImportance="Low">
+      <Output PropertyName="GitTag" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <ItemGroup>
+      <AssemblyMetadata Include="GitTag" Value="$(GitTag)" />
+    </ItemGroup>
+  </Target>
 </Project>
