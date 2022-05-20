@@ -1,4 +1,5 @@
 open System.Text
+open System.Text.RegularExpressions
 open System.Reflection
 open System.Linq
 open Microsoft.Data.Sqlite
@@ -54,6 +55,44 @@ let makeWordList (words: string list) =
         else
             sb.Append($"%s{word}%s{separator}") |> ignore
     sb.ToString()
+
+let tryParseSkipCode (code: string) =
+    if Regex.IsMatch(code, "^\d-\d{1,2}-\d{1,2}$") then
+        Some (SkipCode code)
+    else
+        None
+
+let tryParseShCode (code: string) =
+    if Regex.IsMatch(code, "^\d{1,2}\p{IsBasicLatin}\d{1,2}\.\d{1,2}$") then
+        Some (ShDescCode code)
+    else
+        None
+
+let tryParseFourCornerCode (code: string) =
+    if Regex.IsMatch(code, "^\d{4}\.\d$") then
+        Some (FourCornerCode code)
+    else
+        None
+
+let tryParseDeRooCode (code: string) =
+    if Regex.IsMatch(code, "^\d{3,4}$") then
+        Some (DeRooCode code)
+    else
+        None
+
+let postProcessSkipCode =
+    tryParseSkipCode
+    >> Option.defaultWith (fun () -> failwith "Invalid SKIP code")
+
+let postProcessShCode =
+    tryParseShCode
+    >> Option.defaultWith (fun () -> failwith "Invalid SH code")
+let postProcessFourCornerCode =
+    tryParseFourCornerCode
+    >> Option.defaultWith (fun () -> failwith "Invalid Four Corner code")
+let postProcessDeRooCode =
+    tryParseDeRooCode
+    >> Option.defaultWith (fun () -> failwith "Invalid De Roo code")
 
 let validateCodeArgs (args: ParseResults<KanjiArgs>) =
     let n =
@@ -281,11 +320,10 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
                     |> Option.map (fun radicals -> radicals.EnumerateRunes() |> Seq.toList)
                     |> Option.defaultValue []
                 CharacterCode =
-                    args.TryGetResult Skip_Code
-                    |> Option.map SkipCode
-                    |> Option.orElseWith (fun () -> args.TryGetResult Sh_Code |> Option.map ShDescCode)
-                    |> Option.orElseWith (fun () -> args.TryGetResult Four_Corner_Code |> Option.map FourCornerCode)
-                    |> Option.orElseWith (fun () -> args.TryGetResult Deroo_Code |> Option.map DeRooCode)
+                    args.TryPostProcessResult(Skip_Code, postProcessSkipCode)
+                    |> Option.orElseWith (fun () -> args.TryPostProcessResult(Sh_Code, postProcessShCode))
+                    |> Option.orElseWith (fun () -> args.TryPostProcessResult(Four_Corner_Code, postProcessFourCornerCode))
+                    |> Option.orElseWith (fun () -> args.TryPostProcessResult(Deroo_Code, postProcessDeRooCode))
                 CharacterReading = args.TryGetResult Reading
                 CharacterMeaning = args.TryGetResult Meaning
                 Nanori = args.TryGetResult Nanori
