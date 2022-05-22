@@ -172,8 +172,8 @@ let parseSense (el: XElement) =
         Glosses = parseElementList "gloss" parseGloss el
     }
 
-let getJMdictEntries () =
-    streamXmlElements "entry" "data/JMdict.xml"
+let getJMdictEntries (path: string) =
+    streamXmlElements "entry" path
     |> Seq.map (fun entry ->
         {
             Id = entry.Element("ent_seq").Value |> int
@@ -197,8 +197,8 @@ let parseTranslation (el: XElement) =
         Contents = parseElementList "trans_det" parseTranslationContents el
     }
 
-let getJMnedictEntries () =
-    streamXmlElements "entry" "data/JMnedict.xml"
+let getJMnedictEntries (path: string) =
+    streamXmlElements "entry" path
     |> Seq.map (fun entry ->
         {
             Id = entry.Element("ent_seq").Value |> int
@@ -311,13 +311,13 @@ let parseNanori (el: XElement) =
     | rm ->
         parseElementList "nanori" (fun n -> n.Value) rm
 
-let getKanjidic2Info () =
-    streamXmlElements "header" "data/kanjidic2.xml"
+let getKanjidic2Info (path: string) =
+    streamXmlElements "header" path
     |> Seq.head
     |> parseHeader
 
-let getKanjidic2Entries () =
-    streamXmlElements "character" "data/kanjidic2.xml"
+let getKanjidic2Entries (path: string) =
+    streamXmlElements "character" path
     |> Seq.map (fun entry ->
         {
             Value = rune (entry.Element("literal").Value)

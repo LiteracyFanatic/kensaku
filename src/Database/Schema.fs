@@ -536,18 +536,6 @@ let populateRadicals (ctx: DbConnection) (radkEntries: Domain.RadkEntry list) =
         populateCharactersRadicals ctx id entry.Kanji
     transaction.Commit()
 
-let populateTables (ctx: DbConnection) =
-    let jMdictEntries = DataParsing.getJMdictEntries()
-    populateJMdictEntries ctx jMdictEntries
-    let jMnedictEntries = DataParsing.getJMnedictEntries ()
-    populateJMnedictEntries ctx jMnedictEntries
-    let kanjidic2Info = DataParsing.getKanjidic2Info ()
-    populateKanjidic2Info ctx kanjidic2Info
-    let kanjidic2Entries = DataParsing.getKanjidic2Entries ()
-    populateKanjidic2Entries ctx kanjidic2Entries
-    let radkEntries = DataParsing.getRadkEntries ()
-    populateRadicals ctx radkEntries
-
 type OptionHandler<'T>() =
     inherit SqlMapper.TypeHandler<option<'T>>()
 

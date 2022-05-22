@@ -349,7 +349,6 @@ type Args =
 
 [<EntryPoint>]
 let main argv =
-    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
     let parser =
         ArgumentParser.Create<Args>(
             programName = "kensaku",
