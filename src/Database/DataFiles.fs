@@ -14,7 +14,7 @@ let downloadGZippedResourceAsync (hc: HttpClient) (url: string) (path: string) =
         use! ms = hc.GetStreamAsync(url)
         use data = new GZipStream(ms, CompressionMode.Decompress)
         use fs = File.Create(path)
-        return! data.CopyToAsync(fs)
+        do! data.CopyToAsync(fs)
     }
 
 let downloadJMdictAsync (hc: HttpClient) =
