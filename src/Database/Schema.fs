@@ -509,7 +509,7 @@ let populateKanjidic2Entries (ctx: DbConnection) (characters: Domain.Character s
 
 let getCharacterId (ctx: DbConnection) (character: Rune) =
     ctx.ExecuteScalar<int>(
-        "select id FROM Characters WHERE Value = @Character",
+        sql "select id FROM Characters WHERE Value = @Character",
         {| Character = character |}
     )
 
