@@ -11,7 +11,7 @@ open System.Text.Encodings.Web
 
 let downloadGZippedResourceAsync (hc: HttpClient) (url: string) (path: string) =
     task {
-        let! ms = hc.GetStreamAsync(url)
+        use! ms = hc.GetStreamAsync(url)
         use data = new GZipStream(ms, CompressionMode.Decompress)
         use fs = File.Create(path)
         return! data.CopyToAsync(fs)
@@ -28,7 +28,7 @@ let downloadKanjidic2Async (hc: HttpClient) =
 
 let downloadRadicalFilesAsync (hc: HttpClient) (dir: string) =
     task {
-        let! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip")
+        use! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip")
         use archive = new ZipArchive(stream)
         let files = [
             "kradfile"
