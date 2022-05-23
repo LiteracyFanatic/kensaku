@@ -333,10 +333,13 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
             }
             getKanji query ctx
 
-    kanji
-    |> List.map printKanji
-    |> List.reduce (sprintf "%s\n%s")
-    |> printf "%s"
+    match kanji with
+    | [] -> ()
+    | _ ->
+        kanji
+        |> List.map printKanji
+        |> List.reduce (sprintf "%s\n%s")
+        |> printf "%s"
 
 type Args =
     | [<CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
