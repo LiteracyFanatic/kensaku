@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <AssemblyName>kensaku</AssemblyName>
     <PublishSingleFile>true</PublishSingleFile>
@@ -12,8 +12,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Argu" Version="6.1.1" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.2" />
+    <PackageReference Include="Argu" Version="6.2.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Database/Database.fsproj" />
