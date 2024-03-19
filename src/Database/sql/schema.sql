@@ -43,19 +43,22 @@ DROP TABLE IF EXISTS "KanjiElementInformation";
 CREATE TABLE "KanjiElementInformation" (
     "KanjiElementId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
-    FOREIGN KEY("KanjiElementId") REFERENCES "KanjiElements"("Id")
+    FOREIGN KEY("KanjiElementId") REFERENCES "KanjiElements"("Id"),
+    UNIQUE("KanjiElementId", "Value")
 );
 DROP TABLE IF EXISTS "KanjiElementPriorities";
 CREATE TABLE "KanjiElementPriorities" (
     "KanjiElementId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
-    FOREIGN KEY("KanjiElementId") REFERENCES "KanjiElements"("Id")
+    FOREIGN KEY("KanjiElementId") REFERENCES "KanjiElements"("Id"),
+    UNIQUE("KanjiElementId", "Value")
 );
 DROP TABLE IF EXISTS "ReadingElementPriorities";
 CREATE TABLE "ReadingElementPriorities" (
     "ReadingElementId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
-    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElements"("Id")
+    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElements"("Id"),
+    UNIQUE("ReadingElementId", "Value")
 );
 DROP TABLE IF EXISTS "KanjiElements";
 CREATE TABLE "KanjiElements" (
@@ -63,7 +66,8 @@ CREATE TABLE "KanjiElements" (
     "EntryId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
     PRIMARY KEY("Id" AUTOINCREMENT),
-    FOREIGN KEY("EntryId") REFERENCES "Entries"("Id")
+    FOREIGN KEY("EntryId") REFERENCES "Entries"("Id"),
+    UNIQUE("EntryId", "Value")
 );
 DROP TABLE IF EXISTS "ReadingElements";
 CREATE TABLE "ReadingElements" (
@@ -72,13 +76,15 @@ CREATE TABLE "ReadingElements" (
     "Value" TEXT NOT NULL,
     "IsTrueReading" INTEGER NOT NULL,
     FOREIGN KEY("EntryId") REFERENCES "Entries"("Id"),
-    PRIMARY KEY("Id" AUTOINCREMENT)
+    PRIMARY KEY("Id" AUTOINCREMENT),
+    UNIQUE("EntryId", "Value")
 );
 DROP TABLE IF EXISTS "ReadingElementInformation";
 CREATE TABLE "ReadingElementInformation" (
     "ReadingElementId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
-    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElements"("Id")
+    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElements"("Id"),
+    UNIQUE("ReadingElementId", "Value")
 );
 DROP TABLE IF EXISTS "Senses";
 CREATE TABLE "Senses" (
@@ -103,7 +109,8 @@ DROP TABLE IF EXISTS "SenseReadingElementRestrictions";
 CREATE TABLE "SenseReadingElementRestrictions" (
     "SenseId" INTEGER NOT NULL,
     "ReadingElement" TEXT NOT NULL,
-    FOREIGN KEY("SenseId") REFERENCES "Senses"("Id")
+    FOREIGN KEY("SenseId") REFERENCES "Senses"("Id"),
+    UNIQUE("SenseId", "ReadingElement")
 );
 DROP TABLE IF EXISTS "MiscellaneousInformation";
 CREATE TABLE "MiscellaneousInformation" (
@@ -265,7 +272,8 @@ CREATE TABLE "Characters_Radicals" (
     "CharacterId" INTEGER NOT NULL,
     "RadicalId" INTEGER NOT NULL,
     FOREIGN KEY("CharacterId") REFERENCES "Characters"("Id"),
-    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id")
+    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id"),
+    UNIQUE("CharacterId", "RadicalId")
 );
 
 DELETE FROM sqlite_sequence;
