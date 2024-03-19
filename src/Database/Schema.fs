@@ -28,7 +28,7 @@ let populateKanjiElementPriorities (ctx: DbConnection) (kanjiElementId: int) (pr
             Value = p
         }
         ctx.Execute(
-            sql "insert into KanjiElementPriorities ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
+            sql "insert into KanjiElementPriorities ('KanjiElementId', Value) values (@KanjiElementId, @Value) on conflict do nothing",
             param
         ) |> ignore
 
@@ -39,7 +39,7 @@ let populateKanjiElementInformation (ctx: DbConnection) (kanjiElementId: int) (i
             Value = i
         }
         ctx.Execute(
-            sql "insert into KanjiElementInformation ('KanjiElementId', Value) values (@KanjiElementId, @Value)",
+            sql "insert into KanjiElementInformation ('KanjiElementId', Value) values (@KanjiElementId, @Value) on conflict do nothing",
             param
         ) |> ignore
 
@@ -50,11 +50,15 @@ let populateKanjiElements (ctx: DbConnection) (entryId: int) (kanjiElements: Dom
             EntryId = entryId
             Value = k.Value
         }
-        ctx.Execute(
-            sql "insert into KanjiElements ('EntryId', Value) values (@EntryId, @Value)",
+        let id = ctx.ExecuteScalar<int>(
+            sql "
+                insert into KanjiElements ('EntryId', Value)
+                values (@EntryId, @Value)
+                on conflict do update
+                set EntryId = excluded.EntryId, Value = excluded.Value
+                returning Id",
             param
-        ) |> ignore
-        let id = getLastRowId ctx
+        )
         populateKanjiElementPriorities ctx id k.Priority
         populateKanjiElementInformation ctx id k.Information
 
@@ -65,7 +69,7 @@ let populateReadingElementPriorities (ctx: DbConnection) (readingElementId: int)
             Value = p
         }
         ctx.Execute(
-            sql "insert into ReadingElementPriorities ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementPriorities ('ReadingElementId', Value) values (@ReadingElementId, @Value) on conflict do nothing",
             param
         ) |> ignore
 
@@ -76,7 +80,7 @@ let populateReadingElementInformation (ctx: DbConnection) (readingElementId: int
             Value = i
         }
         ctx.Execute(
-            sql "insert into ReadingElementInformation ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementInformation ('ReadingElementId', Value) values (@ReadingElementId, @Value) on conflict do nothing",
             param
         ) |> ignore
 
@@ -87,7 +91,7 @@ let populateReadingElementRestrictions (ctx: DbConnection) (readingElementId: in
             Value = r
         }
         ctx.Execute(
-            sql "insert into ReadingElementRestrictions ('ReadingElementId', Value) values (@ReadingElementId, @Value)",
+            sql "insert into ReadingElementRestrictions ('ReadingElementId', Value) values (@ReadingElementId, @Value) on conflict do nothing",
             param
         ) |> ignore
 
@@ -99,11 +103,15 @@ let populateReadingElements (ctx: DbConnection) (entryId: int) (readingElements:
             Value = r.Value
             IsTrueReading = r.IsTrueReading
         }
-        ctx.Execute(
-            sql "insert into ReadingElements ('EntryId', Value, 'IsTrueReading') values (@EntryId, @Value, @IsTrueReading)",
+        let id = ctx.ExecuteScalar<int>(
+            sql "
+                insert into ReadingElements ('EntryId', Value, 'IsTrueReading')
+                values (@EntryId, @Value, @IsTrueReading)
+                on conflict do update
+                set EntryId = excluded.EntryId, Value = excluded.Value, 'IsTrueReading' = excluded.'IsTrueReading'
+                returning Id",
             param
-        ) |> ignore
-        let id = getLastRowId ctx
+        )
         populateReadingElementPriorities ctx id r.Priority
         populateReadingElementInformation ctx id r.Information
         populateReadingElementRestrictions ctx id r.Restrictions
@@ -271,10 +279,9 @@ let populateJMdictEntries (ctx: DbConnection) (jMdictEntries: Domain.JMdictEntry
             sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
             param
         ) |> ignore
-        let id = getLastRowId ctx
-        populateKanjiElements ctx id entry.KanjiElements
-        populateReadingElements ctx id entry.ReadingElements
-        populateSenses ctx id entry.Senses
+        populateKanjiElements ctx entry.Id entry.KanjiElements
+        populateReadingElements ctx entry.Id entry.ReadingElements
+        populateSenses ctx entry.Id entry.Senses
     transaction.Commit()
 
 let populateNameTypes (ctx: DbConnection) (translationId: int) (nameTypes: string list) =
@@ -336,13 +343,12 @@ let populateJMnedictEntries (ctx: DbConnection) (jMnedictEntries: Domain.JMnedic
             IsProperName = entry.IsProperName
         }
         ctx.Execute(
-            sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)",
+            sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName) on conflict do nothing",
             param
         ) |> ignore
-        let id = getLastRowId ctx
-        populateKanjiElements ctx id entry.KanjiElements
-        populateReadingElements ctx id entry.ReadingElements
-        populateTranslations ctx id entry.Translations
+        populateKanjiElements ctx entry.Id entry.KanjiElements
+        populateReadingElements ctx entry.Id entry.ReadingElements
+        populateTranslations ctx entry.Id entry.Translations
     transaction.Commit()
 
 let populateKanjidic2Info (ctx: DbConnection) (info: Domain.Kanjidic2Info) =
