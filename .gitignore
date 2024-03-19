@@ -2,4 +2,5 @@ bin/
 obj/
 .vscode/
 .ionide/
+.idea/
 data/
