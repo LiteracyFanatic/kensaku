@@ -55,7 +55,7 @@ DROP TABLE IF EXISTS "ReadingElementPriorities";
 CREATE TABLE "ReadingElementPriorities" (
     "ReadingElementId" INTEGER NOT NULL,
     "Value" TEXT NOT NULL,
-    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElement"("Id")
+    FOREIGN KEY("ReadingElementId") REFERENCES "ReadingElements"("Id")
 );
 DROP TABLE IF EXISTS "KanjiElements";
 CREATE TABLE "KanjiElements" (
