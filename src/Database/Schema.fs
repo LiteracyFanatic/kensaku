@@ -514,32 +514,222 @@ let populateKanjidic2Entries (ctx: DbConnection) (characters: Domain.Character s
     transaction.Commit()
 
 let getCharacterId (ctx: DbConnection) (character: Rune) =
-    ctx.ExecuteScalar<int>(
-        sql "select id FROM Characters WHERE Value = @Character",
-        {| Character = character |}
-    )
+    let id =
+        ctx.ExecuteScalar<int>(
+            sql "select id FROM Characters WHERE Value = @Character",
+            {| Character = character |}
+        )
+    if id = 0 then
+        printfn $"%A{character} does not exist"
+        None
+    else
+        Some id
 
 let populateCharactersRadicals (ctx: DbConnection) (radicalId: int) (characters: Set<Rune>) =
     for c in characters do
-        ctx.Execute(
-            sql "insert into Characters_Radicals ('CharacterId', 'RadicalId') values (@CharacterId, @RadicalId)",
-            { RadicalId = radicalId; CharacterId = getCharacterId ctx c }
-        ) |> ignore
+        getCharacterId ctx c
+        |> Option.iter (fun characterId ->
+            ctx.Execute(
+                sql "insert or ignore into Characters_Radicals ('CharacterId', 'RadicalId') values (@CharacterId, @RadicalId)",
+                { RadicalId = radicalId; CharacterId = characterId }
+            ) |> ignore
+        )
 
-let populateRadicals (ctx: DbConnection) (radkEntries: Domain.RadkEntry list) =
-    use transaction = ctx.BeginTransaction()
-    for entry in radkEntries do
-        let param: Radical = {
-            Id = Unchecked.defaultof<_>
-            Value = entry.Radical
-            StrokeCount = entry.StrokeCount
+let populateRadicalValues (ctx: DbConnection) (radicalId: int) (radicalValues: (Rune * string) list) =
+    for r, t in radicalValues do
+        let param: RadicalValue = {
+            RadicalId = radicalId
+            Value = r
+            Type = t
         }
         ctx.Execute(
-            sql "insert into Radicals (Value, 'StrokeCount') values (@Value, @StrokeCount)",
+            sql "insert or ignore into RadicalValues (RadicalId, Value, Type) values (@RadicalId, @Value, @Type)",
+            param
+        ) |> ignore
+
+let populateRadicalMeanings (ctx: DbConnection) (radicalId: int) (radicalMeanings: (string * string) list) =
+    for m, t in radicalMeanings do
+        let param: RadicalMeaning = {
+            RadicalId = radicalId
+            Value = m
+            Type = t
+        }
+        ctx.Execute(
+            sql "insert or ignore into RadicalMeanings (RadicalId, Value, Type) values (@RadicalId, @Value, @Type)",
+            param
+        ) |> ignore
+
+let populateCJKRadicals (ctx: DbConnection) (getVariants: Rune -> Set<Rune>) (cjkRadicals: Domain.CJKRadical list) =
+    use transaction = ctx.BeginTransaction()
+    for radical in cjkRadicals do
+        let param: Radical = {
+            Id = Unchecked.defaultof<_>
+            Number = Some radical.RadicalNumber
+            StrokeCount = Unchecked.defaultof<_>
+        }
+        ctx.Execute(
+            sql "insert into Radicals (Number, StrokeCount) values (@Number, @StrokeCount)",
             param
         ) |> ignore
         let id = getLastRowId ctx
-        populateCharactersRadicals ctx id entry.Kanji
+        let radicalValues =
+            [
+                radical.Standard.RadicalCharacter
+                radical.Standard.UnifiedIdeographCharacter
+                match radical.Simplified with
+                | Some simplified ->
+                    simplified.RadicalCharacter
+                    simplified.UnifiedIdeographCharacter
+                | None -> ()
+            ] |> List.map getVariants
+            |> List.reduce Set.union
+            |> Set.toList
+            |> List.map (fun x -> x, "CJKRadicals")
+        populateRadicalValues ctx id radicalValues
+    transaction.Commit()
+
+let populateRadicals (ctx: DbConnection) (getVariants: Rune -> Set<Rune>) (radkEntries: Domain.RadkEntry list) =
+    use transaction = ctx.BeginTransaction()
+    for entry in radkEntries do
+        let param = {|
+            RadicalNumber =
+                match DataParsing.charToRadicalNumber.TryFind entry.Radical with
+                | Some 0
+                | None -> None
+                | n -> n
+            RadicalValue = entry.Radical
+        |}
+        let existingRadicalId =
+            ctx.Query<int>(
+                sql "
+                select r.Id
+                from Radicals as r
+                where exists (
+                    select *
+                    from RadicalValues as rv
+                    where
+                        rv.RadicalId = r.Id and (
+                            rv.Value = @RadicalValue
+                            or (@RadicalNumber is not null and @RadicalNumber = r.Number)
+                        )
+                )",
+                param)
+            |> Seq.tryHead
+        let radicalId =
+            match existingRadicalId with
+            | Some existingRadicalId ->
+                let param = {|
+                    RadicalId = existingRadicalId
+                    StrokeCount = entry.StrokeCount
+                |}
+                ctx.Execute(
+                    sql "
+                    update Radicals
+                    set StrokeCount = @StrokeCount
+                    where Id = @RadicalId",
+                    param
+                ) |> ignore
+                entry.Radical
+                |> getVariants
+                |> Set.toList
+                |> List.map (fun x -> x, "radk")
+                |> populateRadicalValues ctx existingRadicalId
+                existingRadicalId
+            | None ->
+                let param = {|
+                    StrokeCount = entry.StrokeCount
+                |}
+                ctx.Execute(
+                    sql "insert into Radicals (StrokeCount) values (@StrokeCount)",
+                    param
+                ) |> ignore
+                let radicalId = getLastRowId ctx
+                entry.Radical
+                |> getVariants
+                |> Set.toList
+                |> List.map (fun x -> x, "radk")
+                |> populateRadicalValues ctx radicalId
+                radicalId
+        populateCharactersRadicals ctx radicalId entry.Kanji
+    transaction.Commit()
+
+let populateWaniKaniRadicals (ctx: DbConnection) (getVariants: Rune -> Set<Rune>) (waniKaniRadicals: DataFiles.WaniKaniData<DataFiles.WaniKaniRadical> list) (waniKaniKanji: DataFiles.WaniKaniData<DataFiles.WaniKaniKanji> list) =
+    use transaction = ctx.BeginTransaction()
+    for waniKaniRadical in waniKaniRadicals do
+        match Option.map rune waniKaniRadical.data.characters with
+        | Some radicalValue ->
+            let param = {|
+                RadicalValue = radicalValue
+            |}
+            let existingRadicalId =
+                ctx.Query<int>(
+                    sql "
+                    select r.Id
+                    from Radicals as r
+                    where exists (
+                        select *
+                        from RadicalValues as rv
+                        where rv.RadicalId = r.Id and rv.Value = @RadicalValue
+                    )",
+                    param)
+                |> Seq.tryHead
+            let radicalId =
+                match existingRadicalId with
+                | Some existingRadicalId ->
+                    radicalValue
+                    |> getVariants
+                    |> Set.toList
+                    |> List.map (fun x -> x, "WaniKani")
+                    |> populateRadicalValues ctx existingRadicalId
+                    existingRadicalId
+                | None ->
+                    let param = {|
+                        StrokeCount = 0
+                    |}
+                    ctx.Execute(
+                        sql "insert into Radicals (StrokeCount) values (@StrokeCount)",
+                        param
+                    ) |> ignore
+                    let radicalId = getLastRowId ctx
+                    radicalValue
+                    |> getVariants
+                    |> Set.toList
+                    |> List.map (fun x -> x, "WaniKani")
+                    |> populateRadicalValues ctx radicalId
+                    radicalId
+
+            [
+                yield! waniKaniRadical.data.meanings |> Array.map (fun x -> x.meaning.ToLowerInvariant())
+                yield! waniKaniRadical.data.auxiliary_meanings |> Array.map (fun x -> x.meaning.ToLowerInvariant())
+            ] |> List.map (fun x -> x, "WaniKani")
+            |> populateRadicalMeanings ctx radicalId
+
+            waniKaniKanji
+            |> List.filter (fun x -> Array.contains x.id waniKaniRadical.data.amalgamation_subject_ids)
+            |> List.map (fun x -> rune (x.data.characters))
+            |> Set.ofList
+            |> populateCharactersRadicals ctx radicalId
+        | None ->
+            // Need to somehow link radicals with only images here
+            ()
+    transaction.Commit()
+
+let populateDerivedRadicalNames (ctx: DbConnection) (derivedRadicalNames: Map<Rune, string>) =
+    use transaction = ctx.BeginTransaction()
+    for radicalValue, radicalName in Map.toList derivedRadicalNames do
+        let param = {|
+            RadicalValue = radicalValue
+            RadicalName = radicalName
+            Type = "Derived"
+        |}
+        ctx.Execute(
+            sql "
+            insert or ignore into RadicalMeanings (RadicalId, Value, Type)
+            select rv.RadicalId, @RadicalName, @Type
+            from RadicalValues as rv
+            where rv.Value = @RadicalValue",
+            param
+        ) |> ignore
     transaction.Commit()
 
 type OptionHandler<'T>() =

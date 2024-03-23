@@ -17,6 +17,9 @@ let downloadDataAsync () =
         let hc = new HttpClient()
         let! _ =
             Task.WhenAll ([
+                DataFiles.downloadCJKRadicalsFileAsync hc (Path.Combine(dir, "CJKRadicals.txt"))
+                DataFiles.downloadEquivalentUnifiedIdeographFileAsync hc (Path.Combine(dir, "EquivalentUnifiedIdeograph.txt"))
+                DataFiles.downloadDerivedNameFileAsync hc (Path.Combine(dir, "DerivedName.txt"))
                 DataFiles.downloadJMdictAsync hc (Path.Combine(dir, "JMdict.xml"))
                 DataFiles.downloadJMnedictAsync hc (Path.Combine(dir, "JMnedict.xml"))
                 DataFiles.downloadKanjidic2Async hc (Path.Combine(dir, "kanjidic2.xml"))
@@ -28,6 +31,10 @@ let downloadDataAsync () =
     }
 
 let populateTables (ctx: DbConnection) =
+    let equivalentCharacters = DataParsing.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
+    let getVariants = DataParsing.getIdeographicVariants equivalentCharacters
+    let cjkRadicals = DataParsing.getCJKRadicals "data/CJKRadicals.txt"
+    Database.Schema.populateCJKRadicals ctx getVariants cjkRadicals
     let jMdictEntries = DataParsing.getJMdictEntries "data/JMdict.xml"
     Database.Schema.populateJMdictEntries ctx jMdictEntries
     let jMnedictEntries = DataParsing.getJMnedictEntries "data/JMnedict.xml"
@@ -36,8 +43,13 @@ let populateTables (ctx: DbConnection) =
     Database.Schema.populateKanjidic2Info ctx kanjidic2Info
     let kanjidic2Entries = DataParsing.getKanjidic2Entries "data/kanjidic2.xml"
     Database.Schema.populateKanjidic2Entries ctx kanjidic2Entries
+    let waniKaniRadicals = DataFiles.loadWaniKaniRadicals "data/wani-kani-radicals.json"
+    let waniKaniKanji = DataFiles.loadWaniKaniKanji "data/wani-kani-kanji.json"
+    Database.Schema.populateWaniKaniRadicals ctx getVariants waniKaniRadicals waniKaniKanji
     let radkEntries = DataParsing.getRadkEntries ()
-    Database.Schema.populateRadicals ctx radkEntries
+    Database.Schema.populateRadicals ctx getVariants radkEntries
+    let derivedRadicalNames = DataParsing.getDerivedRadicalNames "data/DerivedName.txt"
+    Database.Schema.populateDerivedRadicalNames ctx derivedRadicalNames
 
 let createDb () =
     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)

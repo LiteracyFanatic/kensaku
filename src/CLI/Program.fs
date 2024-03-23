@@ -1,3 +1,4 @@
+open System
 open System.Text
 open System.Text.RegularExpressions
 open System.Reflection
@@ -12,7 +13,7 @@ type KanjiArgs =
     | Min_Strokes of int
     | Max_Strokes of int
     | Include_Stroke_Miscounts
-    | Radicals of string
+    | Radicals of string list
     | Skip_Code of string
     | Sh_Code of string
     | Four_Corner_Code of string
@@ -30,7 +31,7 @@ type KanjiArgs =
             | Min_Strokes _ -> "search for kanji with at least the given number of strokes"
             | Max_Strokes _ -> "search for kanji with at most the given number of strokes"
             | Include_Stroke_Miscounts -> "include kanji which are commonly mistaken to have the given number of strokes"
-            | Radicals _ -> "search for kanji containing the given radicals"
+            | Radicals _ -> "search for kanji containing the given radicals. CJK, KANGXI, and WaniKani radical names are supported as well, so both 東 and \"east\" are valid."
             | Skip_Code _ -> "search for kanji with the given SKIP code"
             | Sh_Code _ -> """search for kanji with the given descriptor code from "The Kanji Dictionary" (Tuttle 1996) by Spahn and Hadamitzky"""
             | Four_Corner_Code _ -> "search for kanji with the given Four Corner code"
@@ -311,14 +312,23 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
                 match args.TryGetResult Strokes with
                 | Some n -> Some n, Some n
                 | None -> args.TryGetResult Min_Strokes, args.TryGetResult Max_Strokes
+            let searchRadicals, searchRadicalMeanings =
+                args.TryGetResult Radicals
+                |> Option.defaultValue []
+                |> List.partition (String.forall isJapanese)
+            let radicalNames = getRadicalNames ctx
+            for searchRadicalMeaning in searchRadicalMeanings do
+                let recognizedName =
+                    radicalNames
+                    |> List.exists (fun x -> x.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase))
+                if not recognizedName then
+                    args.Raise($"Could not find a radical named \"%s{searchRadicalMeaning}\"")
             let query = {
                 MinStrokeCount = minStrokeCount
                 MaxStrokeCount = maxStrokeCount
                 IncludeStrokeMiscounts = args.Contains Include_Stroke_Miscounts
-                SearchRadicals =
-                    args.TryGetResult Radicals
-                    |> Option.map (fun radicals -> radicals.EnumerateRunes() |> Seq.toList)
-                    |> Option.defaultValue []
+                SearchRadicals = List.map rune searchRadicals
+                SearchRadicalMeanings = searchRadicalMeanings
                 CharacterCode =
                     args.TryPostProcessResult(Skip_Code, postProcessSkipCode)
                     |> Option.orElseWith (fun () -> args.TryPostProcessResult(Sh_Code, postProcessShCode))

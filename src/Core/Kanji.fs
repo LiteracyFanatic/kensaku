@@ -33,6 +33,7 @@ type GetKanjiQuery = {
     MaxStrokeCount: int option
     IncludeStrokeMiscounts: bool
     SearchRadicals: Rune list
+    SearchRadicalMeanings: string list
     CharacterCode: CharacterCode option
     CharacterReading: string option
     CharacterMeaning: string option
@@ -167,6 +168,41 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
             {|
                 SearchRadical = searchRadical
             |}) |> ignore
+    ctx.Execute(
+        sql "
+        drop table if exists SearchRadicalMeanings;
+
+        create table SearchRadicalMeanings (Value text not null);") |>ignore
+    for searchRadicalMeaning in query.SearchRadicalMeanings do
+        ctx.Execute(
+            sql "insert into SearchRadicalMeanings (Value) values (@SearchRadicalMeaning);",
+            {|
+                SearchRadicalMeaning = searchRadicalMeaning
+            |}) |> ignore
+    let radicalIds =
+        ctx.Query<int>(
+            sql """
+            select rv.RadicalId
+            from RadicalValues as rv
+            join SearchRadicals as sr on rv.Value = sr.Value
+
+            union
+
+            select rm.RadicalId
+            from RadicalMeanings as rm
+            join SearchRadicalMeanings as srm on rm.Value like srm.Value""")
+        |> Seq.toList
+    ctx.Execute(
+        sql "
+        drop table if exists SearchRadicalIds;
+
+        create table SearchRadicalIds (Id number not null);") |>ignore
+    for radicalId in radicalIds do
+        ctx.Execute(
+            sql "insert into SearchRadicalIds (Id) values (@RadicalId);",
+            {|
+                RadicalId = radicalId
+            |}) |> ignore
     ctx.Query<int>(
         sql $"""
         select x.Id
@@ -189,18 +225,16 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
             and (not @CommonOnly or c.Frequency is not null)
             and %s{makePatternCondition query.Pattern}
         ) as x
-        where
-            not exists (
-                select sr.Value
-                from SearchRadicals as sr
+        where not exists (
+            select sri.Id
+            from SearchRadicalIds as sri
 
-                except
+            except
 
-                select r.Value
-                from Characters_Radicals as c_r
-                join Radicals as r on r.Id = c_r.RadicalId
-                where c_r.CharacterId = x.Id
-            )
+            select c_r.RadicalId
+            from Characters_Radicals as c_r
+            where c_r.CharacterId = x.Id
+        )
         order by x.Frequency, x.Value;""",
         param = GetKanjiQueryParams.FromQuery(query))
     |> Seq.toList
@@ -295,9 +329,10 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
     let radicals =
         ctx.Query<{| CharacterId: int; Value: Rune |}>(
             sql "
-            select c_r.CharacterId, r.Value from
+            select c_r.CharacterId, rv.Value from
             Characters_Radicals as c_r
             join Radicals as r on r.Id = c_r.RadicalId
+            join RadicalValues as rv on rv.RadicalId = r.Id
             where c_r.CharacterId in @Ids",
             param)
         |> Seq.toList
@@ -440,3 +475,7 @@ let getKanjiLiterals (kanji: Rune list) (ctx: DbConnection) =
     let ids = getIdsForKanjiLiterals kanji ctx
     let kanji = getKanjiByIds ids ctx
     kanji
+
+let getRadicalNames (ctx: DbConnection) =
+    ctx.Query<string>(sql "select rm.Value from RadicalMeanings as rm")
+    |> Seq.toList

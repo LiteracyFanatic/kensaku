@@ -252,8 +252,22 @@ type Nanori = {
 [<CLIMutable>]
 type Radical = {
     Id: int
-    Value: Rune
+    Number: int option
     StrokeCount: int
+}
+
+[<CLIMutable>]
+type RadicalValue = {
+    RadicalId: int
+    Value: Rune
+    Type: string
+}
+
+[<CLIMutable>]
+type RadicalMeaning = {
+    RadicalId: int
+    Value: string
+    Type: string
 }
 
 [<CLIMutable>]

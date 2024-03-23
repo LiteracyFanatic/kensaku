@@ -41,6 +41,27 @@ let downloadRadicalFilesAsync (hc: HttpClient) (dir: string) =
         |> Seq.iter (fun x -> x.ExtractToFile(Path.Combine(dir, x.Name), true))
     }
 
+let downloadCJKRadicalsFileAsync (hc: HttpClient) (path: string) =
+    task {
+        use! stream = hc.GetStreamAsync("https://www.unicode.org/Public/UCD/latest/ucd/CJKRadicals.txt")
+        use fs = File.Create(path)
+        do! stream.CopyToAsync(fs)
+    }
+
+let downloadEquivalentUnifiedIdeographFileAsync (hc: HttpClient) (path: string) =
+    task {
+        use! stream = hc.GetStreamAsync("https://www.unicode.org/Public/UCD/latest/ucd/EquivalentUnifiedIdeograph.txt")
+        use fs = File.Create(path)
+        do! stream.CopyToAsync(fs)
+    }
+
+let downloadDerivedNameFileAsync (hc: HttpClient) (path: string) =
+    task {
+        use! stream = hc.GetStreamAsync("https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedName.txt")
+        use fs = File.Create(path)
+        do! stream.CopyToAsync(fs)
+    }
+
 type WaniKaniData<'T> = {
     id: int
     object: string
@@ -123,7 +144,7 @@ type WaniKaniRadical = {
     slug: string
     hidden_at: DateTime option
     document_url: string
-    characters: string
+    characters: string option
     character_images: WaniKaniImage[]
     meanings: {|
         meaning: string
@@ -223,3 +244,11 @@ let downloadWaniKaniKanjiAsync (apiKey: string) (hc: HttpClient) (path: string) 
         let serializedKanji = JsonSerializer.Serialize(kanji, jsonSerializerOptions)
         do! File.WriteAllTextAsync(path, serializedKanji)
     }
+
+let loadWaniKaniRadicals (path: string) =
+    use stream = File.OpenRead(path)
+    JsonSerializer.Deserialize<WaniKaniData<WaniKaniRadical> list>(stream, jsonSerializerOptions)
+
+let loadWaniKaniKanji (path: string) =
+    use stream = File.OpenRead(path)
+    JsonSerializer.Deserialize<WaniKaniData<WaniKaniKanji> list>(stream, jsonSerializerOptions)

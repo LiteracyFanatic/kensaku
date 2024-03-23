@@ -152,3 +152,14 @@ type Character = {
     Meanings: CharacterMeaning list
     Nanori: string list
 }
+
+type CJKRadicalValue = {
+    RadicalCharacter: Rune
+    UnifiedIdeographCharacter: Rune
+}
+
+type CJKRadical = {
+    RadicalNumber: int
+    Standard: CJKRadicalValue
+    Simplified: CJKRadicalValue option
+}

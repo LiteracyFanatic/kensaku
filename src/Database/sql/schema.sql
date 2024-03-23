@@ -263,9 +263,23 @@ CREATE TABLE "Nanori" (
 DROP TABLE IF EXISTS "Radicals";
 CREATE TABLE "Radicals" (
     "Id" INTEGER NOT NULL UNIQUE,
-    "Value" TEXT NOT NULL UNIQUE,
+    "Number" INTEGER UNIQUE,
     "StrokeCount" INTEGER NOT NULL,
     PRIMARY KEY("Id" AUTOINCREMENT)
+);
+DROP TABLE IF EXISTS "RadicalValues";
+CREATE TABLE "RadicalValues" (
+    "RadicalId" INTEGER NOT NULL,
+    "Value" TEXT NOT NULL UNIQUE,
+    "Type" TEXT NOT NULL,
+    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id")
+);
+DROP TABLE IF EXISTS "RadicalMeanings";
+CREATE TABLE "RadicalMeanings" (
+    "RadicalId" INTEGER NOT NULL,
+    "Value" TEXT NOT NULL UNIQUE,
+    "Type" TEXT NOT NULL,
+    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id")
 );
 DROP TABLE IF EXISTS "Characters_Radicals";
 CREATE TABLE "Characters_Radicals" (
