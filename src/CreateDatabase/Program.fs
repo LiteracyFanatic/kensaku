@@ -10,28 +10,38 @@ open System.Data.Common
 let downloadDataAsync () =
     task {
         let apiKey = System.Environment.GetEnvironmentVariable("WANI_KANI_API_KEY")
+
         if String.IsNullOrEmpty(apiKey) then
             failwith "The environment variable WANI_KANI_API_KEY must be defined"
+
         let dir = "data"
         Directory.CreateDirectory(dir) |> ignore
         let hc = new HttpClient()
+
         let! _ =
-            Task.WhenAll ([
-                DataFiles.downloadCJKRadicalsFileAsync hc (Path.Combine(dir, "CJKRadicals.txt"))
-                DataFiles.downloadEquivalentUnifiedIdeographFileAsync hc (Path.Combine(dir, "EquivalentUnifiedIdeograph.txt"))
-                DataFiles.downloadDerivedNameFileAsync hc (Path.Combine(dir, "DerivedName.txt"))
-                DataFiles.downloadJMdictAsync hc (Path.Combine(dir, "JMdict.xml"))
-                DataFiles.downloadJMnedictAsync hc (Path.Combine(dir, "JMnedict.xml"))
-                DataFiles.downloadKanjidic2Async hc (Path.Combine(dir, "kanjidic2.xml"))
-                DataFiles.downloadRadicalFilesAsync hc dir
-                DataFiles.downloadWaniKaniRadicalsAsync apiKey hc (Path.Combine(dir, "wani-kani-radicals.json"))
-                DataFiles.downloadWaniKaniKanjiAsync apiKey hc (Path.Combine(dir, "wani-kani-kanji.json"))
-            ])
+            Task.WhenAll(
+                [
+                    DataFiles.downloadCJKRadicalsFileAsync hc (Path.Combine(dir, "CJKRadicals.txt"))
+                    DataFiles.downloadEquivalentUnifiedIdeographFileAsync
+                        hc
+                        (Path.Combine(dir, "EquivalentUnifiedIdeograph.txt"))
+                    DataFiles.downloadDerivedNameFileAsync hc (Path.Combine(dir, "DerivedName.txt"))
+                    DataFiles.downloadJMdictAsync hc (Path.Combine(dir, "JMdict.xml"))
+                    DataFiles.downloadJMnedictAsync hc (Path.Combine(dir, "JMnedict.xml"))
+                    DataFiles.downloadKanjidic2Async hc (Path.Combine(dir, "kanjidic2.xml"))
+                    DataFiles.downloadRadicalFilesAsync hc dir
+                    DataFiles.downloadWaniKaniRadicalsAsync apiKey hc (Path.Combine(dir, "wani-kani-radicals.json"))
+                    DataFiles.downloadWaniKaniKanjiAsync apiKey hc (Path.Combine(dir, "wani-kani-kanji.json"))
+                ]
+            )
+
         return ()
     }
 
 let populateTables (ctx: DbConnection) =
-    let equivalentCharacters = DataParsing.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
+    let equivalentCharacters =
+        DataParsing.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
+
     let getVariants = DataParsing.getIdeographicVariants equivalentCharacters
     let cjkRadicals = DataParsing.getCJKRadicals "data/CJKRadicals.txt"
     Database.Schema.populateCJKRadicals ctx getVariants cjkRadicals
@@ -53,9 +63,7 @@ let populateTables (ctx: DbConnection) =
 
 let createDb () =
     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-    downloadDataAsync ()
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
+    downloadDataAsync () |> Async.AwaitTask |> Async.RunSynchronously
     use ctx = new SqliteConnection("Data Source=data/kensaku.db")
     ctx.Open()
     Database.Schema.registerTypeHandlers ()

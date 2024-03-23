@@ -9,24 +9,24 @@ open Kensaku.Database
 type KeyRadical =
     | KanjiX of int
     | Nelson of int
-    with
-        member this.Value =
-            match this with
-            | KanjiX i -> i
-            | Nelson i -> i
+
+    member this.Value =
+        match this with
+        | KanjiX i -> i
+        | Nelson i -> i
 
 type CharacterCode =
     | SkipCode of string
     | ShDescCode of string
     | FourCornerCode of string
     | DeRooCode of string
-    with
-        member this.Value =
-            match this with
-            | SkipCode c -> c
-            | ShDescCode c -> c
-            | FourCornerCode c -> c
-            | DeRooCode c -> c
+
+    member this.Value =
+        match this with
+        | SkipCode c -> c
+        | ShDescCode c -> c
+        | FourCornerCode c -> c
+        | DeRooCode c -> c
 
 type GetKanjiQuery = {
     MinStrokeCount: int option
@@ -54,35 +54,34 @@ type GetKanjiQueryParams = {
     CommonOnly: bool
     Pattern: string option
     KeyRadical: int option
-}
-with
-    static member FromQuery(query: GetKanjiQuery) =
-        {
-            MinStrokeCount = query.MinStrokeCount
-            MaxStrokeCount = query.MaxStrokeCount
-            IncludeStrokeMiscounts = query.IncludeStrokeMiscounts
-            CharacterCode = query.CharacterCode |> Option.map (fun cc -> cc.Value)
-            CharacterReading = query.CharacterReading
-            CharacterMeaning = query.CharacterMeaning
-            Nanori = query.Nanori
-            CommonOnly = query.CommonOnly
-            Pattern = query.Pattern
-            KeyRadical = query.KeyRadical |> Option.map (fun kr -> kr.Value)
-        }
+} with
+
+    static member FromQuery(query: GetKanjiQuery) = {
+        MinStrokeCount = query.MinStrokeCount
+        MaxStrokeCount = query.MaxStrokeCount
+        IncludeStrokeMiscounts = query.IncludeStrokeMiscounts
+        CharacterCode = query.CharacterCode |> Option.map (fun cc -> cc.Value)
+        CharacterReading = query.CharacterReading
+        CharacterMeaning = query.CharacterMeaning
+        Nanori = query.Nanori
+        CommonOnly = query.CommonOnly
+        Pattern = query.Pattern
+        KeyRadical = query.KeyRadical |> Option.map (fun kr -> kr.Value)
+    }
 
 type SkipMisclassification =
     | Position of string
     | StrokeCount of string
     | StrokeAndPosition of string
     | StrokeDifference of string
-    with
-        static member Create(misclassificationType: string, skipCode: string) =
-            match misclassificationType with
-            | "posn" -> Position skipCode
-            | "stroke_count" -> StrokeCount skipCode
-            | "stroke_and_posn" -> StrokeAndPosition skipCode
-            | "stroke_diff" -> StrokeDifference skipCode
-            | _ -> failwith $"Invalid SKIP misclassification type: %s{misclassificationType}"
+
+    static member Create(misclassificationType: string, skipCode: string) =
+        match misclassificationType with
+        | "posn" -> Position skipCode
+        | "stroke_count" -> StrokeCount skipCode
+        | "stroke_and_posn" -> StrokeAndPosition skipCode
+        | "stroke_diff" -> StrokeDifference skipCode
+        | _ -> failwith $"Invalid SKIP misclassification type: %s{misclassificationType}"
 
 [<CLIMutable>]
 type CharacterVariant = {
@@ -138,6 +137,7 @@ let makeCharacterCodeCondition (characterCode: CharacterCode option) =
             | ShDescCode _ -> "sh_desc"
             | FourCornerCode _ -> "four_corner"
             | DeRooCode _ -> "deroo"
+
         sql $"cqc.Type = '%s{codeType}' and cqc.Value = @CharacterCode"
     | None -> "true"
 
@@ -147,7 +147,8 @@ let makePatternCondition (pattern: string option) =
         match pattern.IndexOf("_") with
         | -1 -> failwith $"Invalid pattern: %s{pattern}"
         | i ->
-            sql $"
+            sql
+                $"
             c.Value in (
                 select substr(ke.Value, %i{i + 1}, %i{i + 1})
                 from KanjiElements as ke
@@ -158,30 +159,41 @@ let makePatternCondition (pattern: string option) =
 // TODO: Implement search by key radical
 let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
     ctx.Execute(
-        sql "
+        sql
+            "
         drop table if exists SearchRadicals;
 
-        create table SearchRadicals (Value text not null);") |>ignore
+        create table SearchRadicals (Value text not null);"
+    )
+    |> ignore
+
     for searchRadical in query.SearchRadicals do
         ctx.Execute(
             sql "insert into SearchRadicals (Value) values (@SearchRadical);",
-            {|
-                SearchRadical = searchRadical
-            |}) |> ignore
+            {| SearchRadical = searchRadical |}
+        )
+        |> ignore
+
     ctx.Execute(
-        sql "
+        sql
+            "
         drop table if exists SearchRadicalMeanings;
 
-        create table SearchRadicalMeanings (Value text not null);") |>ignore
+        create table SearchRadicalMeanings (Value text not null);"
+    )
+    |> ignore
+
     for searchRadicalMeaning in query.SearchRadicalMeanings do
         ctx.Execute(
             sql "insert into SearchRadicalMeanings (Value) values (@SearchRadicalMeaning);",
-            {|
-                SearchRadicalMeaning = searchRadicalMeaning
-            |}) |> ignore
+            {| SearchRadicalMeaning = searchRadicalMeaning |}
+        )
+        |> ignore
+
     let radicalIds =
         ctx.Query<int>(
-            sql """
+            sql
+                """
             select rv.RadicalId
             from RadicalValues as rv
             join SearchRadicals as sr on rv.Value = sr.Value
@@ -190,21 +202,26 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
 
             select rm.RadicalId
             from RadicalMeanings as rm
-            join SearchRadicalMeanings as srm on rm.Value like srm.Value""")
+            join SearchRadicalMeanings as srm on rm.Value like srm.Value"""
+        )
         |> Seq.toList
+
     ctx.Execute(
-        sql "
+        sql
+            "
         drop table if exists SearchRadicalIds;
 
-        create table SearchRadicalIds (Id number not null);") |>ignore
+        create table SearchRadicalIds (Id number not null);"
+    )
+    |> ignore
+
     for radicalId in radicalIds do
-        ctx.Execute(
-            sql "insert into SearchRadicalIds (Id) values (@RadicalId);",
-            {|
-                RadicalId = radicalId
-            |}) |> ignore
+        ctx.Execute(sql "insert into SearchRadicalIds (Id) values (@RadicalId);", {| RadicalId = radicalId |})
+        |> ignore
+
     ctx.Query<int>(
-        sql $"""
+        sql
+            $"""
         select x.Id
         from (
             select distinct c.*
@@ -236,105 +253,108 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
             where c_r.CharacterId = x.Id
         )
         order by x.Frequency, x.Value;""",
-        param = GetKanjiQueryParams.FromQuery(query))
+        param = GetKanjiQueryParams.FromQuery(query)
+    )
     |> Seq.toList
 
 let getIdsForKanjiLiterals (kanji: Rune list) (ctx: DbConnection) =
-    ctx.Query<int>(
-        sql "select Id from Characters where Value in @Kanji",
-        {|
-            Kanji = List.map string kanji
-        |})
+    ctx.Query<int>(sql "select Id from Characters where Value in @Kanji", {| Kanji = List.map string kanji |})
     |> Seq.toList
 
 let getKanjiByIds (ids: int list) (ctx: DbConnection) =
-    let param = {|
-        Ids = ids
-    |}
+    let param = {| Ids = ids |}
+
     let characters =
-        ctx.Query<Tables.Character>(
-            sql "select * from Characters where Id in @Ids",
-            param)
+        ctx.Query<Tables.Character>(sql "select * from Characters where Id in @Ids", param)
         |> Seq.toList
         |> List.map (fun x -> x.Id, x)
         |> Map.ofList
+
     let characterQueryCodes =
-        ctx.Query<Tables.CharacterQueryCode>(
-            sql "select * from CharacterQueryCodes where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.CharacterQueryCode>(sql "select * from CharacterQueryCodes where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let strokeMiscounts =
-        ctx.Query<Tables.StrokeMiscount>(
-            sql "select * from StrokeMiscounts where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.StrokeMiscount>(sql "select * from StrokeMiscounts where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let characterReadings =
-        ctx.Query<Tables.CharacterReading>(
-            sql "select * from CharacterReadings where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.CharacterReading>(sql "select * from CharacterReadings where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let nanori =
-        ctx.Query<Tables.Nanori>(
-            sql "select * from Nanori where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let keyRadicals =
-        ctx.Query<Tables.KeyRadical>(
-            sql "select * from KeyRadicals where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let characterMeanings =
         ctx.Query<Tables.CharacterMeaning>(
             sql "select * from CharacterMeanings where CharacterId in @Ids and Language = 'en'",
-            param)
+            param
+        )
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let characterDictionaryReferences =
         ctx.Query<Tables.CharacterDictionaryReference>(
             sql "select * from CharacterDictionaryReferences where CharacterId in @Ids",
-            param)
+            param
+        )
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let characterVariants =
         ctx.Query<CharacterVariant>(
-            sql "
+            sql
+                "
             select cv.*, c.Value as Character
             from CharacterVariants as cv
             left join CodePoints as cp on cp.Type = cv.Type and cp.Value = cv.Value
             left join Characters as c on c.Id = cp.CharacterId
             where cv.CharacterId in @Ids",
-            param)
+            param
+        )
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let codepoints =
-        ctx.Query<Tables.Codepoint>(
-            sql "select * from CodePoints where CharacterId in @Ids",
-            param)
+        ctx.Query<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
+
     let radicals =
-        ctx.Query<{| CharacterId: int; Value: Rune |}>(
-            sql "
+        ctx.Query<
+            {|
+                CharacterId: int
+                Value: Rune
+            |}
+         >(
+            sql
+                "
             select c_r.CharacterId, rv.Value from
             Characters_Radicals as c_r
             join Radicals as r on r.Id = c_r.RadicalId
             join RadicalValues as rv on rv.RadicalId = r.Id
             where c_r.CharacterId in @Ids",
-            param)
+            param
+        )
         |> Seq.toList
         |> List.groupBy (fun x -> x.CharacterId)
         |> Map.ofList
@@ -342,6 +362,7 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
     ids
     |> List.map (fun id ->
         let character = characters[id]
+
         {
             Id = character.Id
             Value = character.Value
@@ -422,14 +443,8 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
                     |> List.tryFind (fun x -> x.Type = "nelson_c")
                     |> Option.map (fun x -> x.Value)
             |}
-            DictionaryReferences =
-                characterDictionaryReferences
-                |> Map.tryFind id
-                |> Option.defaultValue []
-            Variants =
-                characterVariants
-                |> Map.tryFind id
-                |> Option.defaultValue []
+            DictionaryReferences = characterDictionaryReferences |> Map.tryFind id |> Option.defaultValue []
+            Variants = characterVariants |> Map.tryFind id |> Option.defaultValue []
             CodePoints = {|
                 Ucs =
                     codepoints

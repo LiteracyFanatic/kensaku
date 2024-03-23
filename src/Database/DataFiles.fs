@@ -30,12 +30,8 @@ let downloadRadicalFilesAsync (hc: HttpClient) (dir: string) =
     task {
         use! stream = hc.GetStreamAsync("http://ftp.edrdg.org/pub/Nihongo/kradzip.zip")
         use archive = new ZipArchive(stream)
-        let files = [
-            "kradfile"
-            "kradfile2"
-            "radkfile"
-            "radkfile2"
-        ]
+        let files = [ "kradfile"; "kradfile2"; "radkfile"; "radkfile2" ]
+
         archive.Entries
         |> Seq.filter (fun x -> List.contains x.Name files)
         |> Seq.iter (fun x -> x.ExtractToFile(Path.Combine(dir, x.Name), true))
@@ -85,9 +81,7 @@ type WaniKaniCollection<'T> = {
 
 type WaniKaniSvg = {
     url: string
-    metadata: {|
-        inline_styles: bool
-    |}
+    metadata: {| inline_styles: bool |}
     content_type: string
 }
 
@@ -108,17 +102,20 @@ type WaniKaniImage =
 
 and WaniKaniImageJsonConverter() =
     inherit JsonConverter<WaniKaniImage>()
+
     override this.Read(reader: byref<Utf8JsonReader>, typeToConvert: Type, options: JsonSerializerOptions) =
         // Clone reader so we don't change its position
         let mutable readerClone = reader
         let doc = JsonDocument.ParseValue(&readerClone).RootElement
+
         match doc.GetProperty("content_type").GetString() with
-        | "image/svg+xml" -> Svg (JsonSerializer.Deserialize<WaniKaniSvg>(&reader, options))
-        | "image/png" -> Png (JsonSerializer.Deserialize<WaniKaniPng>(&reader, options))
+        | "image/svg+xml" -> Svg(JsonSerializer.Deserialize<WaniKaniSvg>(&reader, options))
+        | "image/png" -> Png(JsonSerializer.Deserialize<WaniKaniPng>(&reader, options))
         | contentType -> raise (JsonException($"Unrecognized content_type: \"%s{contentType}\""))
 
     override this.Write(writer: Utf8JsonWriter, value: WaniKaniImage, options: JsonSerializerOptions) =
         writer.WriteStartObject()
+
         match value with
         | Svg svg ->
             writer.WriteString(nameof svg.url, svg.url)
@@ -136,6 +133,7 @@ and WaniKaniImageJsonConverter() =
             writer.WriteString(nameof png.metadata.style_name, png.metadata.style_name)
             writer.WriteEndObject()
             writer.WriteString(nameof png.content_type, png.content_type)
+
         writer.WriteEndObject()
 
 type WaniKaniRadical = {
@@ -146,15 +144,17 @@ type WaniKaniRadical = {
     document_url: string
     characters: string option
     character_images: WaniKaniImage[]
-    meanings: {|
-        meaning: string
-        primary: bool
-        accepted_answer: bool
-    |}[]
-    auxiliary_meanings: {|
-        ``type``: string
-        meaning: string
-    |}[]
+    meanings:
+        {|
+            meaning: string
+            primary: bool
+            accepted_answer: bool
+        |}[]
+    auxiliary_meanings:
+        {|
+            ``type``: string
+            meaning: string
+        |}[]
     amalgamation_subject_ids: int[]
     meaning_mnemonic: string
     lesson_position: int
@@ -168,21 +168,24 @@ type WaniKaniKanji = {
     hidden_at: DateTime option
     document_url: string
     characters: string
-    meanings: {|
-        meaning: string
-        primary: bool
-        accepted_answer: bool
-    |}[]
-    auxiliary_meanings: {|
-        ``type``: string
-        meaning: string
-    |}[]
-    readings: {|
-        ``type``: string
-        primary: bool
-        reading: string
-        accepted_answer: bool
-    |}[]
+    meanings:
+        {|
+            meaning: string
+            primary: bool
+            accepted_answer: bool
+        |}[]
+    auxiliary_meanings:
+        {|
+            ``type``: string
+            meaning: string
+        |}[]
+    readings:
+        {|
+            ``type``: string
+            primary: bool
+            reading: string
+            accepted_answer: bool
+        |}[]
     component_subject_ids: int[]
     amalgamation_subject_ids: int[]
     visually_similar_subject_ids: int[]
@@ -197,6 +200,7 @@ let depaginateAsync (f: string -> Task<WaniKaniCollection<'T>>) (url: string) =
         task {
             let! response = f url
             let newAcc = Seq.append acc response.data
+
             if response.pages.next_url.IsSome then
                 return! loop newAcc response.pages.next_url.Value
             else
@@ -209,16 +213,18 @@ let depaginateAsync (f: string -> Task<WaniKaniCollection<'T>>) (url: string) =
     }
 
 let getWaniKanjiCollectionAsync<'T> (url: string) (apiKey: string) (hc: HttpClient) =
-    depaginateAsync (fun url ->
-        task {
-            use req = new HttpRequestMessage(HttpMethod.Get, url)
-            req.Headers.Authorization <- Headers.AuthenticationHeaderValue("Bearer", apiKey)
-            req.Headers.Add("Wanikani-Revision", "20170710")
-            use! response = hc.SendAsync(req)
-            response.EnsureSuccessStatusCode() |> ignore
-            use! stream = response.Content.ReadAsStreamAsync()
-            return! JsonSerializer.DeserializeAsync<WaniKaniCollection<'T>>(stream)
-        }) url
+    depaginateAsync
+        (fun url ->
+            task {
+                use req = new HttpRequestMessage(HttpMethod.Get, url)
+                req.Headers.Authorization <- Headers.AuthenticationHeaderValue("Bearer", apiKey)
+                req.Headers.Add("Wanikani-Revision", "20170710")
+                use! response = hc.SendAsync(req)
+                response.EnsureSuccessStatusCode() |> ignore
+                use! stream = response.Content.ReadAsStreamAsync()
+                return! JsonSerializer.DeserializeAsync<WaniKaniCollection<'T>>(stream)
+            })
+        url
 
 let getWaniKaniRadicalsAsync (apiKey: string) (hc: HttpClient) =
     getWaniKanjiCollectionAsync<WaniKaniRadical> "https://api.wanikani.com/v2/subjects?types=radical" apiKey hc
@@ -227,9 +233,7 @@ let getWaniKaniKanjiAsync (apiKey: string) (hc: HttpClient) =
     getWaniKanjiCollectionAsync<WaniKaniKanji> "https://api.wanikani.com/v2/subjects?types=kanji" apiKey hc
 
 let jsonSerializerOptions =
-    JsonSerializerOptions(
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
+    JsonSerializerOptions(WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
 
 let downloadWaniKaniRadicalsAsync (apiKey: string) (hc: HttpClient) (path: string) =
     task {

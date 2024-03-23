@@ -24,18 +24,23 @@ type KanjiArgs =
     | Common_Only
     | Pattern of string
     | [<MainCommand; Last>] Kanji of string list
+
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Strokes _ -> "search for kanji with the given number of strokes"
             | Min_Strokes _ -> "search for kanji with at least the given number of strokes"
             | Max_Strokes _ -> "search for kanji with at most the given number of strokes"
-            | Include_Stroke_Miscounts -> "include kanji which are commonly mistaken to have the given number of strokes"
-            | Radicals _ -> "search for kanji containing the given radicals. CJK, KANGXI, and WaniKani radical names are supported as well, so both 東 and \"east\" are valid."
+            | Include_Stroke_Miscounts ->
+                "include kanji which are commonly mistaken to have the given number of strokes"
+            | Radicals _ ->
+                "search for kanji containing the given radicals. CJK, KANGXI, and WaniKani radical names are supported as well, so both 東 and \"east\" are valid."
             | Skip_Code _ -> "search for kanji with the given SKIP code"
-            | Sh_Code _ -> """search for kanji with the given descriptor code from "The Kanji Dictionary" (Tuttle 1996) by Spahn and Hadamitzky"""
+            | Sh_Code _ ->
+                """search for kanji with the given descriptor code from "The Kanji Dictionary" (Tuttle 1996) by Spahn and Hadamitzky"""
             | Four_Corner_Code _ -> "search for kanji with the given Four Corner code"
-            | Deroo_Code _ -> """search for kanji with the given code from "2001 Kanji" (Bonjinsha) by Father Joseph De Roo"""
+            | Deroo_Code _ ->
+                """search for kanji with the given code from "2001 Kanji" (Bonjinsha) by Father Joseph De Roo"""
             | Reading _ -> "search for kanji with the given reading"
             | Meaning _ -> "search for kanji with a meaning that matches the given regular expression"
             | Nanori _ -> "search for kanji with the given reading when used in names"
@@ -45,52 +50,50 @@ type KanjiArgs =
 
 let makeWordList (words: string list) =
     let sb = StringBuilder()
-    let separator =
-        if words.Length > 2 then
-            ", "
-        else
-            " "
+    let separator = if words.Length > 2 then ", " else " "
+
     for i, word in List.indexed words do
         if i = words.Length - 1 then
             sb.Append($"or %s{word}") |> ignore
         else
             sb.Append($"%s{word}%s{separator}") |> ignore
+
     sb.ToString()
 
 let tryParseSkipCode (code: string) =
     if Regex.IsMatch(code, "^\d-\d{1,2}-\d{1,2}$") then
-        Some (SkipCode code)
+        Some(SkipCode code)
     else
         None
 
 let tryParseShCode (code: string) =
     if Regex.IsMatch(code, "^\d{1,2}\p{IsBasicLatin}\d{1,2}\.\d{1,2}$") then
-        Some (ShDescCode code)
+        Some(ShDescCode code)
     else
         None
 
 let tryParseFourCornerCode (code: string) =
     if Regex.IsMatch(code, "^\d{4}\.\d$") then
-        Some (FourCornerCode code)
+        Some(FourCornerCode code)
     else
         None
 
 let tryParseDeRooCode (code: string) =
     if Regex.IsMatch(code, "^\d{3,4}$") then
-        Some (DeRooCode code)
+        Some(DeRooCode code)
     else
         None
 
 let postProcessSkipCode =
-    tryParseSkipCode
-    >> Option.defaultWith (fun () -> failwith "Invalid SKIP code")
+    tryParseSkipCode >> Option.defaultWith (fun () -> failwith "Invalid SKIP code")
 
 let postProcessShCode =
-    tryParseShCode
-    >> Option.defaultWith (fun () -> failwith "Invalid SH code")
+    tryParseShCode >> Option.defaultWith (fun () -> failwith "Invalid SH code")
+
 let postProcessFourCornerCode =
     tryParseFourCornerCode
     >> Option.defaultWith (fun () -> failwith "Invalid Four Corner code")
+
 let postProcessDeRooCode =
     tryParseDeRooCode
     >> Option.defaultWith (fun () -> failwith "Invalid De Roo code")
@@ -102,8 +105,10 @@ let validateCodeArgs (args: ParseResults<KanjiArgs>) =
             args.Contains(Sh_Code)
             args.Contains(Four_Corner_Code)
             args.Contains(Deroo_Code)
-        ] |> List.filter id
+        ]
+        |> List.filter id
         |> List.length
+
     if n > 1 then
         let codeArgNames =
             [
@@ -111,17 +116,25 @@ let validateCodeArgs (args: ParseResults<KanjiArgs>) =
                 args.Parser.GetArgumentCaseInfo(Sh_Code).Name.Value
                 args.Parser.GetArgumentCaseInfo(Four_Corner_Code).Name.Value
                 args.Parser.GetArgumentCaseInfo(Deroo_Code).Name.Value
-            ] |> makeWordList
+            ]
+            |> makeWordList
+
         args.Raise($"Only one of %s{codeArgNames} can be used")
 
 let validateStrokeArgs (args: ParseResults<KanjiArgs>) =
-    if args.Contains(Strokes) && (args.Contains(Min_Strokes) || args.Contains(Max_Strokes)) then
+    if
+        args.Contains(Strokes)
+        && (args.Contains(Min_Strokes) || args.Contains(Max_Strokes))
+    then
         let strokeArgName = args.Parser.GetArgumentCaseInfo(Strokes).Name.Value
+
         let minMaxArgNames =
             [
                 args.Parser.GetArgumentCaseInfo(Min_Strokes).Name.Value
                 args.Parser.GetArgumentCaseInfo(Max_Strokes).Name.Value
-            ] |> makeWordList
+            ]
+            |> makeWordList
+
         args.Raise($"%s{strokeArgName} can not be used with %s{minMaxArgNames}")
 
 let validateAtLeastOneArg (args: ParseResults<'a>) =
@@ -185,11 +198,13 @@ let printKanji (kanji: GetKanjiQueryResult) =
     sb.AppendLine($"Kanji: %A{kanji.Value}") |> ignore
 
     sb.Append($"Grade: ") |> ignore
+
     match kanji.Grade with
     | Some grade -> sb.AppendLine(string grade) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
     sb.Append($"Stroke Count: %i{kanji.StrokeCount}") |> ignore
+
     match kanji.StrokeMiscounts with
     | [] -> sb.AppendLine() |> ignore
     | miscounts ->
@@ -201,30 +216,37 @@ let printKanji (kanji: GetKanjiQueryResult) =
         |> ignore
 
     sb.Append("Frequency: ") |> ignore
+
     match kanji.Frequency with
     | Some frequency -> sb.AppendLine(string frequency) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
     sb.AppendLine($"Readings:") |> ignore
+
     for reading in kanji.CharacterReadings.Kunyomi do
         sb.AppendLine($"    %s{reading} (kun)") |> ignore
+
     for reading in kanji.CharacterReadings.Onyomi do
         sb.AppendLine($"    %s{reading} (on)") |> ignore
 
     sb.AppendLine($"Nanori:") |> ignore
+
     for reading in kanji.Nanori do
         sb.AppendLine($"    %s{reading}") |> ignore
 
     sb.AppendLine($"Meanings:") |> ignore
+
     for meaning in kanji.CharacterMeanings do
         sb.AppendLine($"    %s{meaning}") |> ignore
 
     sb.AppendLine("Character Codes:") |> ignore
 
     sb.Append($"    SKIP: ") |> ignore
+
     match kanji.CharacterCodes.Skip with
     | Some skip ->
         sb.Append(skip) |> ignore
+
         match kanji.CharacterCodes.SkipMisclassifications with
         | [] -> sb.AppendLine() |> ignore
         | misclassifications ->
@@ -242,56 +264,70 @@ let printKanji (kanji: GetKanjiQueryResult) =
     | None -> sb.AppendLine("-") |> ignore
 
     sb.Append($"    SH: ") |> ignore
+
     match kanji.CharacterCodes.ShDesc with
     | Some sh -> sb.AppendLine(sh) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
     sb.Append($"    Four Corner: ") |> ignore
+
     match kanji.CharacterCodes.FourCorner with
     | Some fourCorner -> sb.AppendLine(fourCorner) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
     sb.Append($"    DeRoo: ") |> ignore
+
     match kanji.CharacterCodes.DeRoo with
     | Some deroo -> sb.AppendLine(deroo) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
     sb.Append("Radicals: ") |> ignore
+
     for radical in kanji.Radicals do
         sb.Append(radical) |> ignore
+
     sb.AppendLine() |> ignore
 
     sb.Append($"Key Radical: %i{kanji.KeyRadicals.KanjiX}") |> ignore
+
     match kanji.KeyRadicals.Nelson with
     | Some nelsonRadical -> sb.AppendLine($" %i{nelsonRadical}") |> ignore
     | None -> sb.AppendLine() |> ignore
 
     sb.AppendLine("References:") |> ignore
+
     for reference in kanji.DictionaryReferences do
         let dictionaryName = printReferenceType reference.Type
         sb.Append($"    index %s{reference.IndexNumber}") |> ignore
+
         if reference.Page.IsSome then
             sb.Append($", page %i{reference.Page.Value}") |> ignore
+
         if reference.Page.IsSome then
             sb.Append($", volume %i{reference.Volume.Value}") |> ignore
+
         sb.AppendLine($" - %s{dictionaryName}") |> ignore
 
     sb.AppendLine("Codepoints:") |> ignore
     sb.AppendLine($"    Unicode: %s{kanji.CodePoints.Ucs}") |> ignore
+
     if kanji.CodePoints.Jis208.IsSome then
         sb.AppendLine($"    JIS X 0208: %s{kanji.CodePoints.Jis208.Value}") |> ignore
+
     if kanji.CodePoints.Jis212.IsSome then
         sb.AppendLine($"    JIS X 0212: %s{kanji.CodePoints.Jis212.Value}") |> ignore
+
     if kanji.CodePoints.Jis213.IsSome then
         sb.AppendLine($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}") |> ignore
 
     sb.AppendLine("Variants:") |> ignore
+
     for variant in kanji.Variants do
-        let character =
-            variant.Character
-            |> Option.defaultValue (rune "□")
+        let character = variant.Character |> Option.defaultValue (rune "□")
         let variantType = printVariantType variant.Type
-        sb.AppendLine($"    %A{character} %s{variant.Value} (%s{variantType})") |> ignore
+
+        sb.AppendLine($"    %A{character} %s{variant.Value} (%s{variantType})")
+        |> ignore
 
     sb.ToString()
 
@@ -312,17 +348,22 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
                 match args.TryGetResult Strokes with
                 | Some n -> Some n, Some n
                 | None -> args.TryGetResult Min_Strokes, args.TryGetResult Max_Strokes
+
             let searchRadicals, searchRadicalMeanings =
                 args.TryGetResult Radicals
                 |> Option.defaultValue []
                 |> List.partition (String.forall isJapanese)
+
             let radicalNames = getRadicalNames ctx
+
             for searchRadicalMeaning in searchRadicalMeanings do
                 let recognizedName =
                     radicalNames
                     |> List.exists (fun x -> x.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase))
+
                 if not recognizedName then
                     args.Raise($"Could not find a radical named \"%s{searchRadicalMeaning}\"")
+
             let query = {
                 MinStrokeCount = minStrokeCount
                 MaxStrokeCount = maxStrokeCount
@@ -332,7 +373,8 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
                 CharacterCode =
                     args.TryPostProcessResult(Skip_Code, postProcessSkipCode)
                     |> Option.orElseWith (fun () -> args.TryPostProcessResult(Sh_Code, postProcessShCode))
-                    |> Option.orElseWith (fun () -> args.TryPostProcessResult(Four_Corner_Code, postProcessFourCornerCode))
+                    |> Option.orElseWith (fun () ->
+                        args.TryPostProcessResult(Four_Corner_Code, postProcessFourCornerCode))
                     |> Option.orElseWith (fun () -> args.TryPostProcessResult(Deroo_Code, postProcessDeRooCode))
                 CharacterReading = args.TryGetResult Reading
                 CharacterMeaning = args.TryGetResult Meaning
@@ -341,19 +383,17 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
                 Pattern = args.TryGetResult Pattern
                 KeyRadical = None
             }
+
             getKanji query ctx
 
     match kanji with
     | [] -> ()
-    | _ ->
-        kanji
-        |> List.map printKanji
-        |> List.reduce (sprintf "%s\n%s")
-        |> printf "%s"
+    | _ -> kanji |> List.map printKanji |> List.reduce (sprintf "%s\n%s") |> printf "%s"
 
 type Args =
     | [<CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
     | Version
+
     interface IArgParserTemplate with
         member this.Usage =
             match this with
@@ -367,14 +407,19 @@ let main argv =
             programName = "kensaku",
             helpTextMessage = "Quick and easy search for Japanese kanji, radicals, and words",
             errorHandler = ProcessExiter(),
-            usageStringCharacterWidth = 80)
+            usageStringCharacterWidth = 80
+        )
+
     let results = parser.ParseCommandLine(argv)
+
     if results.Contains(Version) then
         let version =
-            Assembly.GetEntryAssembly()
+            Assembly
+                .GetEntryAssembly()
                 .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .First(fun a -> a.Key = "GitTag")
                 .Value
+
         printfn "%s" version
     else
         match results.GetSubCommand() with
