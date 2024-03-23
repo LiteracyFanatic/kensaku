@@ -9,6 +9,7 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="KanjiCommand.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
