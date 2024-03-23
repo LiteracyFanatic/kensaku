@@ -60,13 +60,13 @@ type GetKanjiQueryParams = {
         MinStrokeCount = query.MinStrokeCount
         MaxStrokeCount = query.MaxStrokeCount
         IncludeStrokeMiscounts = query.IncludeStrokeMiscounts
-        CharacterCode = query.CharacterCode |> Option.map (fun cc -> cc.Value)
+        CharacterCode = query.CharacterCode |> Option.map (_.Value)
         CharacterReading = query.CharacterReading
         CharacterMeaning = query.CharacterMeaning
         Nanori = query.Nanori
         CommonOnly = query.CommonOnly
         Pattern = query.Pattern
-        KeyRadical = query.KeyRadical |> Option.map (fun kr -> kr.Value)
+        KeyRadical = query.KeyRadical |> Option.map (_.Value)
     }
 
 type SkipMisclassification =
@@ -273,31 +273,31 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
     let characterQueryCodes =
         ctx.Query<Tables.CharacterQueryCode>(sql "select * from CharacterQueryCodes where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let strokeMiscounts =
         ctx.Query<Tables.StrokeMiscount>(sql "select * from StrokeMiscounts where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let characterReadings =
         ctx.Query<Tables.CharacterReading>(sql "select * from CharacterReadings where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let nanori =
         ctx.Query<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let keyRadicals =
         ctx.Query<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let characterMeanings =
@@ -306,7 +306,7 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             param
         )
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let characterDictionaryReferences =
@@ -315,7 +315,7 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             param
         )
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let characterVariants =
@@ -330,13 +330,13 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             param
         )
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let codepoints =
         ctx.Query<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     let radicals =
@@ -356,7 +356,7 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             param
         )
         |> Seq.toList
-        |> List.groupBy (fun x -> x.CharacterId)
+        |> List.groupBy _.CharacterId
         |> Map.ofList
 
     ids
@@ -372,76 +372,72 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
                 strokeMiscounts
                 |> Map.tryFind id
                 |> Option.defaultValue []
-                |> List.map (fun x -> x.Value)
+                |> List.map (_.Value)
             CharacterReadings = {|
                 Kunyomi =
                     characterReadings
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.filter (fun x -> x.Type = "ja_kun")
-                    |> List.map (fun x -> x.Value)
+                    |> List.map (_.Value)
                 Onyomi =
                     characterReadings
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.filter (fun x -> x.Type = "ja_on")
-                    |> List.map (fun x -> x.Value)
+                    |> List.map (_.Value)
             |}
             CharacterMeanings =
                 characterMeanings
                 |> Map.tryFind id
                 |> Option.defaultValue []
-                |> List.map (fun x -> x.Value)
+                |> List.map (_.Value)
             CharacterCodes = {|
                 Skip =
                     characterQueryCodes
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "skip")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
                 SkipMisclassifications =
                     characterQueryCodes
                     |> Map.tryFind id
                     |> Option.defaultValue []
-                    |> List.filter (fun x -> x.SkipMisclassification.IsSome)
+                    |> List.filter _.SkipMisclassification.IsSome
                     |> List.map (fun x -> SkipMisclassification.Create(x.SkipMisclassification.Value, x.Value))
                 ShDesc =
                     characterQueryCodes
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "sh_desc")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
                 FourCorner =
                     characterQueryCodes
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "four_corner")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
                 DeRoo =
                     characterQueryCodes
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "deroo")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
             |}
-            Nanori =
-                nanori
-                |> Map.tryFind id
-                |> Option.defaultValue []
-                |> List.map (fun x -> x.Value)
+            Nanori = nanori |> Map.tryFind id |> Option.defaultValue [] |> List.map (_.Value)
             KeyRadicals = {|
                 KanjiX =
                     keyRadicals
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.find (fun x -> x.Type = "classical")
-                    |> fun x -> x.Value
+                    |> (_.Value)
                 Nelson =
                     keyRadicals
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "nelson_c")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
             |}
             DictionaryReferences = characterDictionaryReferences |> Map.tryFind id |> Option.defaultValue []
             Variants = characterVariants |> Map.tryFind id |> Option.defaultValue []
@@ -451,31 +447,27 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.find (fun x -> x.Type = "ucs")
-                    |> fun x -> x.Value
+                    |> (_.Value)
                 Jis208 =
                     codepoints
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "jis208")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
                 Jis212 =
                     codepoints
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "jis212")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
                 Jis213 =
                     codepoints
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "jis213")
-                    |> Option.map (fun x -> x.Value)
+                    |> Option.map (_.Value)
             |}
-            Radicals =
-                radicals
-                |> Map.tryFind id
-                |> Option.defaultValue []
-                |> List.map (fun x -> x.Value)
+            Radicals = radicals |> Map.tryFind id |> Option.defaultValue [] |> List.map (_.Value)
             Frequency = character.Frequency
             IsRadical = character.IsRadical
             OldJlptLevel = character.OldJlptLevel

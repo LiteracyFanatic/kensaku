@@ -812,19 +812,17 @@ let populateWaniKaniRadicals
                     radicalId
 
             [
-                yield!
-                    waniKaniRadical.data.meanings
-                    |> Array.map (fun x -> x.meaning.ToLowerInvariant())
+                yield! waniKaniRadical.data.meanings |> Array.map _.meaning.ToLowerInvariant()
                 yield!
                     waniKaniRadical.data.auxiliary_meanings
-                    |> Array.map (fun x -> x.meaning.ToLowerInvariant())
+                    |> Array.map _.meaning.ToLowerInvariant()
             ]
             |> List.map (fun x -> x, "WaniKani")
             |> populateRadicalMeanings ctx radicalId
 
             waniKaniKanji
             |> List.filter (fun x -> Array.contains x.id waniKaniRadical.data.amalgamation_subject_ids)
-            |> List.map (fun x -> rune (x.data.characters))
+            |> List.map (fun x -> rune x.data.characters)
             |> Set.ofList
             |> populateCharactersRadicals ctx radicalId
         | None ->

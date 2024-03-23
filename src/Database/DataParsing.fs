@@ -30,13 +30,14 @@ let getEquivalentCharacters (path: string) =
             let in1 = hexStringToInt (m.Groups["in1"].Value)
             let out = hexStringToInt (m.Groups["out"].Value)
             let description = m.Groups["description"].Value
+            printfn "%A" description
 
             let newGroup =
                 match m.Groups["in2"].Value, m.Groups["n"].Value with
                 | "", "" -> [ in1; out ]
                 | _, "" -> failwith "in2 was present but n was not"
                 | "", _ -> failwith "n was present but in2 was not"
-                | in2, n -> out :: [ in1 .. (hexStringToInt in2) ]
+                | in2, _ -> out :: [ in1 .. (hexStringToInt in2) ]
                 |> List.map Rune
                 |> Set.ofList
 
@@ -76,7 +77,7 @@ let getCJKRadicals (path: string) =
                     Simplified = None
                 }
 
-    radicals |> Seq.map (fun x -> x.Value) |> Seq.toList
+    radicals |> Seq.map (_.Value) |> Seq.toList
 
 let replace (pattern: string) (replacement: string) (input: string) =
     Regex.Replace(input, pattern, replacement)
@@ -204,7 +205,7 @@ let parseRadkFile (path: string) =
 let getRadkEntries () =
     [ "data/radkfile"; "data/radkfile2" ]
     |> List.collect parseRadkFile
-    |> List.groupBy (fun x -> x.Radical)
+    |> List.groupBy _.Radical
     |> List.map (fun (radical, pair) ->
         match pair with
         | [ a; b ] -> { a with Kanji = a.Kanji + b.Kanji }
@@ -220,7 +221,7 @@ let streamXmlElements (elementName: string) (path: string) =
 
     seq {
         try
-            while (reader.Read()) do
+            while reader.Read() do
                 if reader.NodeType = XmlNodeType.Element && reader.Name = elementName then
                     XElement.ReadFrom(reader) :?> XElement
         finally
@@ -232,16 +233,16 @@ let parseElementList (elementName: string) (f: XElement -> 'a) (el: XElement) =
 
 let parseKanjiElement (el: XElement) = {
     Value = el.Element("keb").Value
-    Information = parseElementList "ke_inf" (fun p -> p.Value) el
-    Priority = parseElementList "ke_pri" (fun p -> p.Value) el
+    Information = parseElementList "ke_inf" (_.Value) el
+    Priority = parseElementList "ke_pri" (_.Value) el
 }
 
 let parseReadingElement (el: XElement) = {
     Value = el.Element("reb").Value
     IsTrueReading = isNull (el.Element("re_nokanji"))
-    Restrictions = parseElementList "re_restr" (fun p -> p.Value) el
-    Information = parseElementList "re_inf" (fun p -> p.Value) el
-    Priority = parseElementList "re_pri" (fun p -> p.Value) el
+    Restrictions = parseElementList "re_restr" (_.Value) el
+    Information = parseElementList "re_inf" (_.Value) el
+    Priority = parseElementList "re_pri" (_.Value) el
 }
 
 type ReferenceComponent =
@@ -332,16 +333,16 @@ let parseGloss (el: XElement) = {
 }
 
 let parseSense (el: XElement) = {
-    KanjiRestrictions = parseElementList "stagk" (fun p -> p.Value) el
-    ReadingRestrictions = parseElementList "stagr" (fun p -> p.Value) el
-    PartsOfSpeech = parseElementList "pos" (fun p -> p.Value) el
+    KanjiRestrictions = parseElementList "stagk" (_.Value) el
+    ReadingRestrictions = parseElementList "stagr" (_.Value) el
+    PartsOfSpeech = parseElementList "pos" (_.Value) el
     CrossReferences = parseElementList "xref" parseCrossReference el
     Antonyms = parseElementList "ant" parseAntonym el
-    Fields = parseElementList "field" (fun p -> p.Value) el
-    MiscellaneousInformation = parseElementList "misc" (fun p -> p.Value) el
-    AdditionalInformation = parseElementList "s_inf" (fun p -> p.Value) el
+    Fields = parseElementList "field" (_.Value) el
+    MiscellaneousInformation = parseElementList "misc" (_.Value) el
+    AdditionalInformation = parseElementList "s_inf" (_.Value) el
     LanguageSources = parseElementList "lsource" parseLanguageSource el
-    Dialects = parseElementList "dial" (fun p -> p.Value) el
+    Dialects = parseElementList "dial" (_.Value) el
     Glosses = parseElementList "gloss" parseGloss el
 }
 
@@ -361,7 +362,7 @@ let parseTranslationContents (el: XElement) : TranslationContents = {
 }
 
 let parseTranslation (el: XElement) = {
-    NameTypes = parseElementList "name_type" (fun p -> p.Value) el
+    NameTypes = parseElementList "name_type" (_.Value) el
     CrossReferences = parseElementList "xref" parseCrossReference el
     Contents = parseElementList "trans_det" parseTranslationContents el
 }
@@ -475,7 +476,7 @@ let parseCharacterMeanings (el: XElement) =
 let parseNanori (el: XElement) =
     match el.Element("reading_meaning") with
     | null -> []
-    | rm -> parseElementList "nanori" (fun n -> n.Value) rm
+    | rm -> parseElementList "nanori" (_.Value) rm
 
 let getKanjidic2Info (path: string) =
     streamXmlElements "header" path |> Seq.head |> parseHeader
@@ -492,7 +493,7 @@ let getKanjidic2Entries (path: string) =
         Variants = entry.Element("misc") |> parseElementList "variant" parseVariant
         Frequency = parseFrequency entry
         IsRadical = entry.Element("misc").Element("rad_name") <> null
-        RadicalNames = entry.Element("misc") |> parseElementList "rad_name" (fun p -> p.Value)
+        RadicalNames = entry.Element("misc") |> parseElementList "rad_name" (_.Value)
         OldJlptLevel = parseOldJlptLevel entry
         DictionaryReferences = parseDictionaryReferences entry
         QueryCodes = parseQueryCodes entry

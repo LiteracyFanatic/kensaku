@@ -9,7 +9,7 @@ open System.Data.Common
 
 let downloadDataAsync () =
     task {
-        let apiKey = System.Environment.GetEnvironmentVariable("WANI_KANI_API_KEY")
+        let apiKey = Environment.GetEnvironmentVariable("WANI_KANI_API_KEY")
 
         if String.IsNullOrEmpty(apiKey) then
             failwith "The environment variable WANI_KANI_API_KEY must be defined"
