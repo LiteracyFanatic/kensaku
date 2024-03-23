@@ -197,7 +197,7 @@ let printKanji (kanji: GetKanjiQueryResult) =
 
     sb.AppendLine($"Kanji: %A{kanji.Value}") |> ignore
 
-    sb.Append($"Grade: ") |> ignore
+    sb.Append("Grade: ") |> ignore
 
     match kanji.Grade with
     | Some grade -> sb.AppendLine(string grade) |> ignore
@@ -221,7 +221,7 @@ let printKanji (kanji: GetKanjiQueryResult) =
     | Some frequency -> sb.AppendLine(string frequency) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
-    sb.AppendLine($"Readings:") |> ignore
+    sb.AppendLine("Readings:") |> ignore
 
     for reading in kanji.CharacterReadings.Kunyomi do
         sb.AppendLine($"    %s{reading} (kun)") |> ignore
@@ -229,19 +229,19 @@ let printKanji (kanji: GetKanjiQueryResult) =
     for reading in kanji.CharacterReadings.Onyomi do
         sb.AppendLine($"    %s{reading} (on)") |> ignore
 
-    sb.AppendLine($"Nanori:") |> ignore
+    sb.AppendLine("Nanori:") |> ignore
 
     for reading in kanji.Nanori do
         sb.AppendLine($"    %s{reading}") |> ignore
 
-    sb.AppendLine($"Meanings:") |> ignore
+    sb.AppendLine("Meanings:") |> ignore
 
     for meaning in kanji.CharacterMeanings do
         sb.AppendLine($"    %s{meaning}") |> ignore
 
     sb.AppendLine("Character Codes:") |> ignore
 
-    sb.Append($"    SKIP: ") |> ignore
+    sb.Append("    SKIP: ") |> ignore
 
     match kanji.CharacterCodes.Skip with
     | Some skip ->
@@ -263,19 +263,19 @@ let printKanji (kanji: GetKanjiQueryResult) =
             |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
-    sb.Append($"    SH: ") |> ignore
+    sb.Append("    SH: ") |> ignore
 
     match kanji.CharacterCodes.ShDesc with
     | Some sh -> sb.AppendLine(sh) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
-    sb.Append($"    Four Corner: ") |> ignore
+    sb.Append("    Four Corner: ") |> ignore
 
     match kanji.CharacterCodes.FourCorner with
     | Some fourCorner -> sb.AppendLine(fourCorner) |> ignore
     | None -> sb.AppendLine("-") |> ignore
 
-    sb.Append($"    DeRoo: ") |> ignore
+    sb.Append("    DeRoo: ") |> ignore
 
     match kanji.CharacterCodes.DeRoo with
     | Some deroo -> sb.AppendLine(deroo) |> ignore
@@ -359,7 +359,7 @@ let kanjiHandler (args: ParseResults<KanjiArgs>) =
             for searchRadicalMeaning in searchRadicalMeanings do
                 let recognizedName =
                     radicalNames
-                    |> List.exists (fun x -> x.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase))
+                    |> List.exists _.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase)
 
                 if not recognizedName then
                     args.Raise($"Could not find a radical named \"%s{searchRadicalMeaning}\"")

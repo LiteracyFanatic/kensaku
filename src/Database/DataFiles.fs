@@ -196,7 +196,7 @@ type WaniKaniKanji = {
 }
 
 let depaginateAsync (f: string -> Task<WaniKaniCollection<'T>>) (url: string) =
-    let rec loop (acc) (url: string) =
+    let rec loop acc (url: string) =
         task {
             let! response = f url
             let newAcc = Seq.append acc response.data

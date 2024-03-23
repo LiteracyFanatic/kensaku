@@ -9,7 +9,7 @@ module Option =
 
 type XAttribute with
     member this.TryGetValue() =
-        this |> Option.ofObj |> Option.map (fun a -> a.Value)
+        this |> Option.ofObj |> Option.map (_.Value)
 
 let isHiragana (c: char) = c >= '\u3040' && c <= '\u309f'
 
