@@ -280,7 +280,7 @@ let parseCrossReference (el: XElement) =
         | Some(Kanji k), Some(Reading r), None -> Some k, Some r, None
         | Some(Kanji k), Some(Index i), None -> Some k, None, Some i
         // It isn't obvious from the description in the JMdict DTD, but a
-        // reading and sense can occur without out a kanji component.
+        // reading and sense can occur without a kanji component.
         | Some(Reading r), Some(Index i), None -> None, Some r, Some i
         // These three cases are weird. The katakana middle dot only acts as a
         // separator when there is more than one reference component. This means
