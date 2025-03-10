@@ -277,9 +277,10 @@ CREATE TABLE "RadicalValues" (
 DROP TABLE IF EXISTS "RadicalMeanings";
 CREATE TABLE "RadicalMeanings" (
     "RadicalId" INTEGER NOT NULL,
-    "Value" TEXT NOT NULL UNIQUE,
+    "Value" TEXT NOT NULL,
     "Type" TEXT NOT NULL,
-    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id")
+    FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id"),
+    UNIQUE("RadicalId", "Value")
 );
 DROP TABLE IF EXISTS "Characters_Radicals";
 CREATE TABLE "Characters_Radicals" (
