@@ -291,6 +291,47 @@ CREATE TABLE "Characters_Radicals" (
     UNIQUE("CharacterId", "RadicalId")
 );
 
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_RadicalMeanings_RadicalId ON "RadicalMeanings" ("RadicalId");
+CREATE INDEX IF NOT EXISTS idx_Characters_Radicals_CharacterId ON "Characters_Radicals" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_Characters_Radicals_RadicalId ON "Characters_Radicals" ("RadicalId");
+CREATE INDEX IF NOT EXISTS idx_SenseCrossReferences_SenseId ON "SenseCrossReferences" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_Fields_SenseId ON "Fields" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_PartsOfSpeech_SenseId ON "PartsOfSpeech" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_Dialects_SenseId ON "Dialects" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_SenseInformation_SenseId ON "SenseInformation" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_KanjiElementInformation_KanjiElementId ON "KanjiElementInformation" ("KanjiElementId");
+CREATE INDEX IF NOT EXISTS idx_KanjiElementPriorities_KanjiElementId ON "KanjiElementPriorities" ("KanjiElementId");
+CREATE INDEX IF NOT EXISTS idx_ReadingElementPriorities_ReadingElementId ON "ReadingElementPriorities" ("ReadingElementId");
+CREATE INDEX IF NOT EXISTS idx_KanjiElements_EntryId ON "KanjiElements" ("EntryId");
+CREATE INDEX IF NOT EXISTS idx_KanjiElements_Value ON "KanjiElements" ("Value");
+CREATE INDEX IF NOT EXISTS idx_ReadingElements_EntryId ON "ReadingElements" ("EntryId");
+CREATE INDEX IF NOT EXISTS idx_ReadingElements_Value ON "ReadingElements" ("Value");
+CREATE INDEX IF NOT EXISTS idx_ReadingElementInformation_ReadingElementId ON "ReadingElementInformation" ("ReadingElementId");
+CREATE INDEX IF NOT EXISTS idx_Senses_EntryId ON "Senses" ("EntryId");
+CREATE INDEX IF NOT EXISTS idx_SenseKanjiElementRestrictions_SenseId ON "SenseKanjiElementRestrictions" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_ReadingElementRestrictions_ReadingElementId ON "ReadingElementRestrictions" ("ReadingElementId");
+CREATE INDEX IF NOT EXISTS idx_SenseReadingElementRestrictions_SenseId ON "SenseReadingElementRestrictions" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_MiscellaneousInformation_SenseId ON "MiscellaneousInformation" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_LanguageSources_SenseId ON "LanguageSources" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_Glosses_SenseId ON "Glosses" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_Antonyms_SenseId ON "Antonyms" ("SenseId");
+CREATE INDEX IF NOT EXISTS idx_Translations_EntryId ON "Translations" ("EntryId");
+CREATE INDEX IF NOT EXISTS idx_NameTypes_TranslationId ON "NameTypes" ("TranslationId");
+CREATE INDEX IF NOT EXISTS idx_TranslationCrossReferences_TranslationId ON "TranslationCrossReferences" ("TranslationId");
+CREATE INDEX IF NOT EXISTS idx_TranslationContents_TranslationId ON "TranslationContents" ("TranslationId");
+CREATE INDEX IF NOT EXISTS idx_CodePoints_CharacterId ON "CodePoints" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_KeyRadicals_CharacterId ON "KeyRadicals" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_StrokeMiscounts_CharacterId ON "StrokeMiscounts" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_CharacterVariants_CharacterId ON "CharacterVariants" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_RadicalNames_CharacterId ON "RadicalNames" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_CharacterDictionaryReferences_CharacterId ON "CharacterDictionaryReferences" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_CharacterQueryCodes_CharacterId ON "CharacterQueryCodes" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_CharacterReadings_CharacterId ON "CharacterReadings" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_CharacterMeanings_CharacterId ON "CharacterMeanings" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_Nanori_CharacterId ON "Nanori" ("CharacterId");
+CREATE INDEX IF NOT EXISTS idx_RadicalValues_RadicalId ON "RadicalValues" ("RadicalId");
+
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence ('name', 'seq') VALUES
     ('KanjiElements', 0),
