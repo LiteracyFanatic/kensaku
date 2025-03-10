@@ -39,9 +39,12 @@ let downloadDataAsync () =
     }
 
 let populateTables (ctx: DbConnection) =
-    let equivalentCharacters =
-        DataParsing.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
-
+    let equivalentCharacters = DataParsing.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
+    equivalentCharacters
+    |> Map.values
+    |> Seq.distinct
+    |> Seq.toList
+    |> Database.Schema.populateEquivalentCharacters ctx
     let getVariants = DataParsing.getIdeographicVariants equivalentCharacters
     let cjkRadicals = DataParsing.getCJKRadicals "data/CJKRadicals.txt"
     Database.Schema.populateCJKRadicals ctx getVariants cjkRadicals

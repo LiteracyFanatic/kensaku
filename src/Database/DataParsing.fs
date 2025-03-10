@@ -29,8 +29,6 @@ let getEquivalentCharacters (path: string) =
         if m.Success then
             let in1 = hexStringToInt (m.Groups["in1"].Value)
             let out = hexStringToInt (m.Groups["out"].Value)
-            let description = m.Groups["description"].Value
-            printfn "%A" description
 
             let newGroup =
                 match m.Groups["in2"].Value, m.Groups["n"].Value with

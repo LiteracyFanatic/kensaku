@@ -1,17 +1,30 @@
-open System.Reflection
-open System.Linq
 open Argu
+open Kensaku.Database
 open Kensaku.CLI.KanjiCommand
+open Kensaku.CLI.WordCommand
+open Kensaku.CLI.VersionCommand
+open Kensaku.CLI.LicensesCommand
+open Microsoft.Data.Sqlite
 
 type Args =
-    | [<CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
-    | Version
+    | [<SubCommand; CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
+    | [<SubCommand; CliPrefix(CliPrefix.None)>] Word of ParseResults<WordArgs>
+    | [<SubCommand; CliPrefix(CliPrefix.None)>] Licenses
+    | [<SubCommand; CliPrefix(CliPrefix.None)>] Version
 
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Kanji _ -> "search for kanji"
+            | Word _ -> "search for words"
+            | Licenses -> "display license info"
             | Version -> "display the version info"
+
+let getDbConnection () =
+    let ctx = new SqliteConnection("Data Source=data/kensaku.db")
+    Schema.registerTypeHandlers ()
+    Schema.registerRegexpFunction ctx
+    ctx
 
 [<EntryPoint>]
 let main argv =
@@ -25,20 +38,10 @@ let main argv =
 
     let results = parser.ParseCommandLine(argv)
 
-    if results.Contains(Version) then
-        let version =
-            Assembly
-                .GetEntryAssembly()
-                .GetCustomAttributes<AssemblyMetadataAttribute>()
-                .First(fun a -> a.Key = "GitTag")
-                .Value
-
-        printfn "%s" version
-    else
-        match results.GetSubCommand() with
-        | Kanji kanjiArgs -> kanjiHandler kanjiArgs
-        | Version ->
-            let versionOptionName = results.Parser.GetArgumentCaseInfo(Version).Name.Value
-            results.Raise($"%s{versionOptionName} should be handled before evaluation of subcommands")
+    match results.GetSubCommand() with
+    | Kanji kanjiArgs -> kanjiHandler (getDbConnection ()) kanjiArgs
+    | Word wordArgs -> wordHandler (getDbConnection ()) wordArgs
+    | Licenses -> licensesHandler ()
+    | Version -> versionHandler ()
 
     0

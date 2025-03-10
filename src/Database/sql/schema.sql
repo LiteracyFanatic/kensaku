@@ -290,6 +290,10 @@ CREATE TABLE "Characters_Radicals" (
     FOREIGN KEY("RadicalId") REFERENCES "Radicals"("Id"),
     UNIQUE("CharacterId", "RadicalId")
 );
+DROP TABLE IF EXISTS "EquivalentCharacters";
+CREATE TABLE "EquivalentCharacters" (
+    "Characters" TEXT NOT NULL
+);
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_RadicalMeanings_RadicalId ON "RadicalMeanings" ("RadicalId");

@@ -26,4 +26,7 @@ let isJapanese (c: char) = isKana c || isKanji c
 
 let inline rune input = Rune.GetRuneAt(string input, 0)
 
+module String =
+    let getRunes (input: string) = [ for rune in input.EnumerateRunes() -> rune ]
+
 let sql (input: string) = input

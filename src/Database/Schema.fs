@@ -23,6 +23,22 @@ let createSchema (ctx: DbConnection) =
 let getLastRowId (ctx: DbConnection) =
     ctx.QuerySingle<int>(sql "select last_insert_rowid()")
 
+let populateEquivalentCharacters (ctx: DbConnection) (variantGroups: Set<Rune> list) =
+    use transaction = ctx.BeginTransaction()
+
+    for group in variantGroups do
+        let param = {|
+            Group = group
+                |> Set.toList
+                |> List.map string
+                |> String.concat ""
+        |}
+
+        ctx.Execute(sql "insert into EquivalentCharacters ('Characters') values (@Group)", param)
+        |> ignore
+
+    transaction.Commit()
+
 let populateKanjiElementPriorities (ctx: DbConnection) (kanjiElementId: int) (priorities: string list) =
     for p in priorities do
         let param: KanjiElementPriority = {

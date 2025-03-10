@@ -7,12 +7,12 @@ open Kensaku
 open Kensaku.Database
 
 type KeyRadical =
-    | KanjiX of int
+    | Kangxi of int
     | Nelson of int
 
     member this.Value =
         match this with
-        | KanjiX i -> i
+        | Kangxi i -> i
         | Nelson i -> i
 
 type CharacterCode =
@@ -91,8 +91,14 @@ type CharacterVariant = {
     Character: Rune option
 }
 
+type KeyRadicalValue = {
+    Number: int
+    Values: Rune list
+    Meanings: string list
+    Type: string
+}
+
 type GetKanjiQueryResult = {
-    Id: int
     Value: Rune
     Grade: int option
     StrokeCount: int
@@ -111,8 +117,8 @@ type GetKanjiQueryResult = {
     |}
     Nanori: string list
     KeyRadicals: {|
-        KanjiX: int
-        Nelson: int option
+        Kangxi: KeyRadicalValue
+        Nelson: KeyRadicalValue option
     |}
     DictionaryReferences: Tables.CharacterDictionaryReference list
     Variants: CharacterVariant list
@@ -294,11 +300,33 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
         |> List.groupBy _.CharacterId
         |> Map.ofList
 
+    let radicals =
+        ctx.Query<Tables.Radical>(sql "select * from Radicals")
+        |> Seq.toList
+
+    let radicalValues =
+        ctx.Query<Tables.RadicalValue>(sql "select * from RadicalValues")
+        |> Seq.toList
+        |> List.groupBy _.RadicalId
+        |> Map.ofList
+
+    let radicalMeanings =
+        ctx.Query<Tables.RadicalMeaning>(sql "select * from RadicalMeanings")
+        |> Seq.toList
+        |> List.groupBy _.RadicalId
+        |> Map.ofList
+
     let keyRadicals =
         ctx.Query<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
         |> Seq.toList
         |> List.groupBy _.CharacterId
         |> Map.ofList
+        |> Map.map (fun key v ->
+            v |> List.map (fun kr ->
+                let r = radicals |> List.find (fun x -> x.Number = Some kr.Value)
+                let values = radicalValues |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
+                let meanings = radicalMeanings |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
+                { Number = kr.Value; Values = values; Meanings = meanings; Type = kr.Type }))
 
     let characterMeanings =
         ctx.Query<Tables.CharacterMeaning>(
@@ -359,12 +387,21 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
         |> List.groupBy _.CharacterId
         |> Map.ofList
 
+    let equivalentCharacters =
+        ctx.Query<string>(sql "select Characters from EquivalentCharacters")
+        |> Seq.toList
+        |> List.map (String.getRunes >> set)
+
+    let getCharacterGroup (character: Rune) =
+        equivalentCharacters
+        |> List.tryFind (Set.contains character)
+        |> Option.defaultValue (Set.singleton character)
+
     ids
     |> List.map (fun id ->
         let character = characters[id]
 
         {
-            Id = character.Id
             Value = character.Value
             Grade = character.Grade
             StrokeCount = character.StrokeCount
@@ -426,18 +463,16 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
             |}
             Nanori = nanori |> Map.tryFind id |> Option.defaultValue [] |> List.map (_.Value)
             KeyRadicals = {|
-                KanjiX =
+                Kangxi =
                     keyRadicals
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.find (fun x -> x.Type = "classical")
-                    |> (_.Value)
                 Nelson =
                     keyRadicals
                     |> Map.tryFind id
                     |> Option.defaultValue []
                     |> List.tryFind (fun x -> x.Type = "nelson_c")
-                    |> Option.map (_.Value)
             |}
             DictionaryReferences = characterDictionaryReferences |> Map.tryFind id |> Option.defaultValue []
             Variants = characterVariants |> Map.tryFind id |> Option.defaultValue []
@@ -467,7 +502,13 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
                     |> List.tryFind (fun x -> x.Type = "jis213")
                     |> Option.map (_.Value)
             |}
-            Radicals = radicals |> Map.tryFind id |> Option.defaultValue [] |> List.map (_.Value)
+            Radicals =
+                radicals
+                |> Map.tryFind id
+                |> Option.defaultValue []
+                |> List.map (_.Value)
+                |> List.groupBy getCharacterGroup
+                |> List.map (snd >> List.sortDescending >> List.head)
             Frequency = character.Frequency
             IsRadical = character.IsRadical
             OldJlptLevel = character.OldJlptLevel
