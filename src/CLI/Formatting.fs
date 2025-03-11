@@ -3,7 +3,6 @@ module CLI.Formatting
 open System
 open System.Diagnostics
 open System.IO
-open System.Runtime.InteropServices
 open System.Text
 open System.Text.Encodings.Web
 open System.Text.Json
@@ -28,10 +27,7 @@ let toJson value =
     JsonSerializer.Serialize(value, jsonSerializerOptions)
 
 let tryGetPager () =
-    if
-        Console.IsOutputRedirected
-        || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-    then
+    if OperatingSystem.IsWindows() || Console.IsOutputRedirected then
         None
     else
         let lessArgs = "-FR"
