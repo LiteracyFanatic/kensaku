@@ -165,16 +165,17 @@ let isSearchOption (arg: KanjiArgs) =
     | No_Pager -> false
 
 let getSearchOptions (args: ParseResults<KanjiArgs>) =
-    args.GetAllResults()
-    |> List.filter isSearchOption
+    args.GetAllResults() |> List.filter isSearchOption
 
 let validateAtLeastOneArg (args: ParseResults<KanjiArgs>) =
     let searchOptions = getSearchOptions args
+
     if searchOptions.Length = 0 then
         args.Raise("You must specify at least one search option")
 
 let validateNoOtherSearchOptionsWithLiteralKanji (args: ParseResults<KanjiArgs>) =
     let searchOptions = getSearchOptions args
+
     if args.Contains(Kanji) && searchOptions.Length > 1 then
         args.Raise("You can not use other search options when passing a literal kanji")
 
@@ -241,18 +242,19 @@ let kanjiHandler (ctx: DbConnection) (args: ParseResults<KanjiArgs>) =
         match args.TryGetResult(Format) |> Option.defaultValue Format.Text with
         | Format.Text ->
             let console = StringWriterAnsiConsole()
-            for i in 0..kanji.Length-1 do
+
+            for i in 0 .. kanji.Length - 1 do
                 printKanji console kanji[i]
-                if i < kanji.Length-1 then
+
+                if i < kanji.Length - 1 then
                     console.WriteLine()
                     (console :> IAnsiConsole).Write(Rule())
                     console.WriteLine()
+
             let text = console.ToString()
+
             if args.Contains(No_Pager) then
                 printf "%s" text
             else
                 toPager text
-        | Format.Json ->
-            kanji
-            |> toJson
-            |> printfn "%s"
+        | Format.Json -> kanji |> toJson |> printfn "%s"

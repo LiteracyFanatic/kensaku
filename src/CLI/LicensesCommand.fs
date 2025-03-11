@@ -5,12 +5,13 @@ open System.Reflection
 
 let licensesHandler () =
     let stream =
-        Assembly
-            .GetExecutingAssembly()
-            .GetManifestResourceStream("CLI.NugetLicenses.txt")
+        Assembly.GetExecutingAssembly().GetManifestResourceStream("CLI.NugetLicenses.txt")
+
     use sr = new StreamReader(stream)
     let nugetLicenses = sr.ReadToEnd().Trim()
-    printfn $"kensaku is made available under the terms of the MIT License.
+
+    printfn
+        $"kensaku is made available under the terms of the MIT License.
 
 kensaku uses the CJKRadicals.txt, DerivedName.txt, and EquivalentUnifiedIdeograph.txt Unicode Data Files. These files are the property of the Unicode Consortium (https://www.unicode.org/), and are used in conformance with the Consortium's license (https://www.unicode.org/license.txt).
 

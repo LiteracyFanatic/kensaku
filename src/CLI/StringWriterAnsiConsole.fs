@@ -6,8 +6,7 @@ open Spectre.Console
 open Spectre.Console.Rendering
 
 type NonBreakingRenderable(renderable: IRenderable) =
-    new(text: string) =
-        NonBreakingRenderable(Text(text))
+    new(text: string) = NonBreakingRenderable(Text(text))
 
     interface IRenderable with
         member _.Measure(options: RenderOptions, maxWidth: int) =
@@ -19,7 +18,14 @@ type NonBreakingRenderable(renderable: IRenderable) =
 type StringWriterAnsiConsole() =
     let writer = new StringWriter()
     let settings = AnsiConsoleSettings()
-    do settings.Ansi <- if Console.IsOutputRedirected then AnsiSupport.No else AnsiSupport.Detect
+
+    do
+        settings.Ansi <-
+            if Console.IsOutputRedirected then
+                AnsiSupport.No
+            else
+                AnsiSupport.Detect
+
     do settings.Out <- AnsiConsoleOutput(writer)
     let console = AnsiConsole.Create(settings)
 
@@ -32,10 +38,16 @@ type StringWriterAnsiConsole() =
         override this.Clear(home: bool) = console.Clear(home)
         override this.Write(value: IRenderable) = console.Write(value)
 
-    member this.WriteNonBreaking(value: string) = console.Write(NonBreakingRenderable(value))
-    member this.WriteLineNonBreaking(value: string) = console.Write(NonBreakingRenderable($"%s{value}\n"))
-    member this.MarkupNonBreaking(value: string) = console.Write(NonBreakingRenderable(Markup(value)))
-    member this.MarkupLineNonBreaking(value: string) = console.Write(NonBreakingRenderable(Markup($"%s{value}\n")))
+    member this.WriteNonBreaking(value: string) =
+        console.Write(NonBreakingRenderable(value))
 
-    override this.ToString() =
-        writer.ToString()
+    member this.WriteLineNonBreaking(value: string) =
+        console.Write(NonBreakingRenderable($"%s{value}\n"))
+
+    member this.MarkupNonBreaking(value: string) =
+        console.Write(NonBreakingRenderable(Markup(value)))
+
+    member this.MarkupLineNonBreaking(value: string) =
+        console.Write(NonBreakingRenderable(Markup($"%s{value}\n")))
+
+    override this.ToString() = writer.ToString()

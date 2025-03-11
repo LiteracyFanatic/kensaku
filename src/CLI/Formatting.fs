@@ -18,48 +18,55 @@ type Format =
     | Text
     | Json
 
-let jsonSerializerOptions = JsonSerializerOptions(
-    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    WriteIndented = true
-)
+let jsonSerializerOptions =
+    JsonSerializerOptions(Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, WriteIndented = true)
+
 JsonFSharpOptions.Default().AddToJsonSerializerOptions(jsonSerializerOptions)
 jsonSerializerOptions.Converters.Add(RuneJsonConverter())
 
-let toJson value = JsonSerializer.Serialize(value, jsonSerializerOptions)
+let toJson value =
+    JsonSerializer.Serialize(value, jsonSerializerOptions)
 
 let tryGetPager () =
-    if Console.IsOutputRedirected || RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+    if
+        Console.IsOutputRedirected
+        || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+    then
         None
     else
         let lessArgs = "-FR"
         let moreArgs = ""
+
         [
             "/usr/bin/less", lessArgs
             "/bin/less", lessArgs
             "/usr/bin/more", moreArgs
             "/bin/more", moreArgs
-        ] |> List.tryFind (fst >> File.Exists)
+        ]
+        |> List.tryFind (fst >> File.Exists)
 
 let toPager (output: string) =
-    match tryGetPager() with
+    match tryGetPager () with
     | None -> printf "%s" output
     | Some(command, args) ->
         try
-            let psi = ProcessStartInfo(
-                FileName = command,
-                Arguments = args,
-                RedirectStandardInput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            )
+            let psi =
+                ProcessStartInfo(
+                    FileName = command,
+                    Arguments = args,
+                    RedirectStandardInput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                )
+
             use pager = Process.Start(psi)
+
             using pager.StandardInput (fun writer ->
                 if writer.BaseStream.CanWrite then
-                    writer.Write(output)
-            )
+                    writer.Write(output))
+
             pager.WaitForExit()
-        with
-        | ex ->
+        with ex ->
             printfn "%s" output
 
 let printReferenceType (referenceType: string) =
@@ -241,45 +248,48 @@ let printKanji (console: StringWriterAnsiConsole) (kanji: GetKanjiQueryResult) =
         console.WriteLineNonBreaking($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}")
 
 let formatCrossReference (crossReference: CrossReference) =
-    [ crossReference.Kanji
-      crossReference.Reading
-      crossReference.Index |> Option.map (sprintf "%i")
-    ] |> List.filter Option.isSome
+    [
+        crossReference.Kanji
+        crossReference.Reading
+        crossReference.Index |> Option.map (sprintf "%i")
+    ]
+    |> List.filter Option.isSome
     |> List.map Option.get
     |> String.concat " "
     |> sprintf "See also %s"
 
 let formatAntonym (antonym: Antonym) =
-    [ antonym.Kanji
-      antonym.Reading
-    ] |> List.filter Option.isSome
+    [ antonym.Kanji; antonym.Reading ]
+    |> List.filter Option.isSome
     |> List.map Option.get
     |> String.concat " "
 
 let formatLanguageSource (languageSource: LanguageSource) =
     let sb = StringBuilder()
-    sb.AppendLine($"From %s{languageSource.Code} \"%s{languageSource.Value}\"") |> ignore
+
+    sb.AppendLine($"From %s{languageSource.Code} \"%s{languageSource.Value}\"")
+    |> ignore
+
     if languageSource.IsWasei then
         sb.AppendLine(". Wasei (word made in Japan)") |> ignore
+
     sb.ToString()
 
 let getReadings (kanji: KanjiElement) (readings: ReadingElement list) =
     let restrictedReadings =
-        readings
-        |> List.filter (fun re -> List.contains kanji.Value re.Restrictions)
+        readings |> List.filter (fun re -> List.contains kanji.Value re.Restrictions)
+
     if restrictedReadings.Length > 0 then
         restrictedReadings
     else
-        readings
-        |> List.filter (fun re -> re.Restrictions.Length = 0)
+        readings |> List.filter (fun re -> re.Restrictions.Length = 0)
 
 let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
-    let trueReadings =
-        word.ReadingElements
-        |> List.filter (fun re -> re.IsTrueReading)
+    let trueReadings = word.ReadingElements |> List.filter (fun re -> re.IsTrueReading)
+
     let falseReadings =
-        word.ReadingElements
-        |> List.filter (fun re -> re.IsTrueReading |> not)
+        word.ReadingElements |> List.filter (fun re -> re.IsTrueReading |> not)
+
     let kanjiReadingPairs =
         word.KanjiElements
         |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
@@ -290,70 +300,111 @@ let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
             let b = if re.Priority.Length > 0 then 1 else 0
             (a, b, -i))
         |> List.map snd
+
     kanjiReadingPairs.Head, kanjiReadingPairs.Tail, falseReadings
 
 
 let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
-    let (primaryKanji, primaryReading), alternateForms, falseReadings = getPrimaryAndAlternateForms word
+    let (primaryKanji, primaryReading), alternateForms, falseReadings =
+        getPrimaryAndAlternateForms word
 
     console.MarkupLineNonBreaking($"%s{primaryKanji.Value} 【%s{primaryReading.Value}】")
 
-    let senses = word.Senses |> List.filter (fun sense -> sense.Glosses |> List.exists (fun gloss -> gloss.LanguageCode = "eng"))
+    let senses =
+        word.Senses
+        |> List.filter (fun sense -> sense.Glosses |> List.exists (fun gloss -> gloss.LanguageCode = "eng"))
 
     if senses.Length > 0 then
         console.WriteLine()
-        for i in 0..senses.Length-1 do
+
+        for i in 0 .. senses.Length - 1 do
             let sense = senses[i]
             let partsOfSpeech = sense.PartsOfSpeech |> String.concat ", "
             console.MarkupLineNonBreaking($"[italic dim]%s{partsOfSpeech}[/]")
             let glosses = sense.Glosses |> List.map _.Value |> String.concat "; "
             console.MarkupNonBreaking($"%i{i + 1}. %s{glosses}")
-            let kanjiRestrictions = sense.KanjiRestrictions |> List.map (sprintf "Only applies to %s") |> String.concat ", "
-            let readingRestrictions = sense.ReadingRestrictions |> List.map (sprintf "Only applies to %s") |> String.concat ", "
-            let crossReferences = sense.CrossReferences |> List.map formatCrossReference |> String.concat ", "
+
+            let kanjiRestrictions =
+                sense.KanjiRestrictions
+                |> List.map (sprintf "Only applies to %s")
+                |> String.concat ", "
+
+            let readingRestrictions =
+                sense.ReadingRestrictions
+                |> List.map (sprintf "Only applies to %s")
+                |> String.concat ", "
+
+            let crossReferences =
+                sense.CrossReferences |> List.map formatCrossReference |> String.concat ", "
+
             let antonyms = sense.Antonyms |> List.map formatAntonym |> String.concat ", "
             let fields = sense.Fields |> String.concat ", "
             let miscellaneousInformation = sense.MiscellaneousInformation |> String.concat ", "
             let additionalInformation = sense.AdditionalInformation |> String.concat ", "
             let dialects = sense.Dialects |> String.concat ", "
-            let languageSources = sense.LanguageSources |> List.map formatLanguageSource |> String.concat ", "
-            let details = String.Join(", ", [
-                if fields.Length > 0 then $"%s{fields}"
-                if antonyms.Length > 0 then $"Antonyms: %s{antonyms}"
-                if miscellaneousInformation.Length > 0 then miscellaneousInformation
-                if dialects.Length > 0 then $"%s{dialects}"
-                if languageSources.Length > 0 then languageSources
-                if crossReferences.Length > 0 then crossReferences
-                if additionalInformation.Length > 0 then additionalInformation
-                if kanjiRestrictions.Length > 0 then kanjiRestrictions
-                if readingRestrictions.Length > 0 then readingRestrictions
-            ])
+
+            let languageSources =
+                sense.LanguageSources |> List.map formatLanguageSource |> String.concat ", "
+
+            let details =
+                [
+                    if fields.Length > 0 then
+                        $"%s{fields}"
+                    if antonyms.Length > 0 then
+                        $"Antonyms: %s{antonyms}"
+                    if miscellaneousInformation.Length > 0 then
+                        miscellaneousInformation
+                    if dialects.Length > 0 then
+                        $"%s{dialects}"
+                    if languageSources.Length > 0 then
+                        languageSources
+                    if crossReferences.Length > 0 then
+                        crossReferences
+                    if additionalInformation.Length > 0 then
+                        additionalInformation
+                    if kanjiRestrictions.Length > 0 then
+                        kanjiRestrictions
+                    if readingRestrictions.Length > 0 then
+                        readingRestrictions
+                ]
+                |> String.concat ", "
+
             if details.Length > 0 then
                 console.MarkupNonBreaking($" [dim]%s{details}[/]")
+
             console.WriteLine()
-            if i < senses.Length-1 then
+
+            if i < senses.Length - 1 then
                 console.WriteLine()
 
     let translations = word.Translations
 
     if translations.Length > 0 then
         console.WriteLine()
-        for i in 0..translations.Length-1 do
+
+        for i in 0 .. translations.Length - 1 do
             let translation = translations[i]
             let nameTypes = String.concat ", " translation.NameTypes
             console.MarkupLineNonBreaking($"[italic dim]%s{nameTypes}[/]")
             let contents = translation.Contents |> List.map _.Value |> String.concat "; "
-            let crossReferences = translation.CrossReferences |> List.map formatCrossReference |> String.concat ", "
-            console.MarkupNonBreaking($"%i{i+1+senses.Length}. %s{contents}")
+
+            let crossReferences =
+                translation.CrossReferences
+                |> List.map formatCrossReference
+                |> String.concat ", "
+
+            console.MarkupNonBreaking($"%i{i + 1 + senses.Length}. %s{contents}")
+
             if crossReferences.Length > 0 then
                 console.MarkupNonBreaking($" [dim]%s{crossReferences}[/]")
+
             console.WriteLine()
-            if i < translations.Length-1 then
+
+            if i < translations.Length - 1 then
                 console.WriteLine()
 
     let otherForms =
-        (alternateForms
-        |> List.map (fun (k, r) -> $"%s{k.Value} 【%s{r.Value}】"))
+        (alternateForms |> List.map (fun (k, r) -> $"%s{k.Value} 【%s{r.Value}】"))
         @ (falseReadings |> List.map _.Value)
         |> String.concat ", "
 
@@ -381,5 +432,6 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
     if readingNotes.Length > 0 then
         console.WriteLine()
         console.MarkupLineNonBreaking("Notes")
+
         for note in notes do
             console.MarkupLineNonBreaking(note)

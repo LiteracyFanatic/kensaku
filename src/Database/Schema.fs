@@ -13,9 +13,7 @@ open Kensaku.Database.Tables
 
 let createSchema (ctx: DbConnection) =
     let stream =
-        Assembly
-            .GetExecutingAssembly()
-            .GetManifestResourceStream("Database.sql.schema.sql")
+        Assembly.GetExecutingAssembly().GetManifestResourceStream("Database.sql.schema.sql")
 
     use sr = new StreamReader(stream)
     sr.ReadToEnd() |> ctx.Execute |> ignore
@@ -27,12 +25,7 @@ let populateEquivalentCharacters (ctx: DbConnection) (variantGroups: Set<Rune> l
     use transaction = ctx.BeginTransaction()
 
     for group in variantGroups do
-        let param = {|
-            Group = group
-                |> Set.toList
-                |> List.map string
-                |> String.concat ""
-        |}
+        let param = {| Group = group |> Set.toList |> List.map string |> String.concat "" |}
 
         ctx.Execute(sql "insert into EquivalentCharacters ('Characters') values (@Group)", param)
         |> ignore

@@ -300,9 +300,7 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
         |> List.groupBy _.CharacterId
         |> Map.ofList
 
-    let radicals =
-        ctx.Query<Tables.Radical>(sql "select * from Radicals")
-        |> Seq.toList
+    let radicals = ctx.Query<Tables.Radical>(sql "select * from Radicals") |> Seq.toList
 
     let radicalValues =
         ctx.Query<Tables.RadicalValue>(sql "select * from RadicalValues")
@@ -322,11 +320,25 @@ let getKanjiByIds (ids: int list) (ctx: DbConnection) =
         |> List.groupBy _.CharacterId
         |> Map.ofList
         |> Map.map (fun key v ->
-            v |> List.map (fun kr ->
+            v
+            |> List.map (fun kr ->
                 let r = radicals |> List.find (fun x -> x.Number = Some kr.Value)
-                let values = radicalValues |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
-                let meanings = radicalMeanings |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
-                { Number = kr.Value; Values = values; Meanings = meanings; Type = kr.Type }))
+
+                let values =
+                    radicalValues |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
+
+                let meanings =
+                    radicalMeanings
+                    |> Map.tryFind r.Id
+                    |> Option.defaultValue []
+                    |> List.map _.Value
+
+                {
+                    Number = kr.Value
+                    Values = values
+                    Meanings = meanings
+                    Type = kr.Type
+                }))
 
     let characterMeanings =
         ctx.Query<Tables.CharacterMeaning>(

@@ -27,16 +27,17 @@ let isSearchOption (arg: WordArgs) =
     | No_Pager -> false
 
 let getSearchOptions (args: ParseResults<WordArgs>) =
-    args.GetAllResults()
-    |> List.filter isSearchOption
+    args.GetAllResults() |> List.filter isSearchOption
 
 let validateAtLeastOneArg (args: ParseResults<WordArgs>) =
     let searchOptions = getSearchOptions args
+
     if searchOptions.Length = 0 then
         args.Raise("You must specify at least one search option")
 
 let validateNoOtherSearchOptionsWithLiteralWord (args: ParseResults<WordArgs>) =
     let searchOptions = getSearchOptions args
+
     if args.Contains(Word) && searchOptions.Length > 1 then
         args.Raise("You can not use other search options when passing a literal word")
 
@@ -49,10 +50,8 @@ let wordHandler (ctx: DbConnection) (args: ParseResults<WordArgs>) =
 
     let words =
         match args.TryGetResult(Word) with
-        | Some words ->
-            getWordLiterals words ctx
-        | None ->
-            raise (NotImplementedException())
+        | Some words -> getWordLiterals words ctx
+        | None -> raise (NotImplementedException())
 
     match words with
     | [] -> ()
@@ -60,18 +59,19 @@ let wordHandler (ctx: DbConnection) (args: ParseResults<WordArgs>) =
         match args.TryGetResult(Format) |> Option.defaultValue Format.Text with
         | Format.Text ->
             let console = StringWriterAnsiConsole()
-            for i in 0..words.Length-1 do
+
+            for i in 0 .. words.Length - 1 do
                 printWord console words[i]
-                if i < words.Length-1 then
+
+                if i < words.Length - 1 then
                     console.WriteLine()
                     (console :> IAnsiConsole).Write(Rule())
                     console.WriteLine()
+
             let text = console.ToString()
+
             if args.Contains(No_Pager) then
                 printf "%s" text
             else
                 toPager text
-        | Format.Json ->
-            words
-            |> toJson
-            |> printfn "%s"
+        | Format.Json -> words |> toJson |> printfn "%s"

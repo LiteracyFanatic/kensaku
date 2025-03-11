@@ -10,6 +10,7 @@ type RuneJsonConverter() =
 
     override this.Read(reader: byref<Utf8JsonReader>, typeToConvert: Type, options: JsonSerializerOptions) =
         let value = reader.GetString()
+
         if value.Length = 1 then
             Rune(value[0])
         else

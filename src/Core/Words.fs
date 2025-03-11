@@ -51,6 +51,7 @@ let getKanjiElements (entryId: int) (ctx: DbConnection) =
                 {| KanjiElementId = ke.Id |}
             )
             |> Seq.toList
+
         let priority =
             ctx.Query<string>(
                 sql
@@ -61,6 +62,7 @@ let getKanjiElements (entryId: int) (ctx: DbConnection) =
                 {| KanjiElementId = ke.Id |}
             )
             |> Seq.toList
+
         {
             Value = ke.Value
             Information = information
@@ -88,6 +90,7 @@ let getReadingElements (entryId: int) (ctx: DbConnection) =
                 {| ReadingElementId = re.Id |}
             )
             |> Seq.toList
+
         let information =
             ctx.Query<string>(
                 sql
@@ -98,6 +101,7 @@ let getReadingElements (entryId: int) (ctx: DbConnection) =
                 {| ReadingElementId = re.Id |}
             )
             |> Seq.toList
+
         let priority =
             ctx.Query<string>(
                 sql
@@ -108,6 +112,7 @@ let getReadingElements (entryId: int) (ctx: DbConnection) =
                 {| ReadingElementId = re.Id |}
             )
             |> Seq.toList
+
         {
             Value = re.Value
             IsTrueReading = re.IsTrueReading
@@ -158,12 +163,12 @@ let getCrossReferences (senseId: int) (ctx: DbConnection) =
         from SenseCrossReferences as scr
         where scr.SenseId = @SenseId""",
         {| SenseId = senseId |}
-    ) |> Seq.map (fun scf ->
-        {
-            Kanji = scf.ReferenceKanjiElement
-            Reading = scf.ReferenceReadingElement
-            Index = scf.ReferenceSense
-        })
+    )
+    |> Seq.map (fun scf -> {
+        Kanji = scf.ReferenceKanjiElement
+        Reading = scf.ReferenceReadingElement
+        Index = scf.ReferenceSense
+    })
     |> Seq.toList
 
 let getAntonyms (senseId: int) (ctx: DbConnection) =
@@ -174,11 +179,11 @@ let getAntonyms (senseId: int) (ctx: DbConnection) =
         from Antonyms as a
         where a.SenseId = @SenseId""",
         {| SenseId = senseId |}
-    ) |> Seq.map (fun a ->
-        {
-            Kanji = a.ReferenceKanjiElement
-            Reading = a.ReferenceReadingElement
-        })
+    )
+    |> Seq.map (fun a -> {
+        Kanji = a.ReferenceKanjiElement
+        Reading = a.ReferenceReadingElement
+    })
     |> Seq.toList
 
 let getFields (senseId: int) (ctx: DbConnection) =
@@ -222,13 +227,13 @@ let getLanguageSources (senseId: int) (ctx: DbConnection) =
         from LanguageSources as ls
         where ls.SenseId = @SenseId""",
         {| SenseId = senseId |}
-    ) |> Seq.map (fun ls ->
-        {
-            Value = ls.Value
-            Code = ls.LanguageCode
-            IsPartial = ls.IsPartial
-            IsWasei = ls.IsWasei
-        })
+    )
+    |> Seq.map (fun ls -> {
+        Value = ls.Value
+        Code = ls.LanguageCode
+        IsPartial = ls.IsPartial
+        IsWasei = ls.IsWasei
+    })
     |> Seq.toList
 
 let getDialects (senseId: int) (ctx: DbConnection) =
@@ -250,15 +255,15 @@ let getGlosses (senseId: int) (ctx: DbConnection) =
         from Glosses as g
         where g.SenseId = @SenseId""",
         {| SenseId = senseId |}
-    ) |> Seq.map (fun g ->
-        {
-            Value = g.Value
-            LanguageCode = g.Language
-            Type = g.Type
-        })
+    )
+    |> Seq.map (fun g -> {
+        Value = g.Value
+        LanguageCode = g.Language
+        Type = g.Type
+    })
     |> Seq.toList
 
-let getSenses (entryId: int) (ctx: DbConnection): Sense list =
+let getSenses (entryId: int) (ctx: DbConnection) : Sense list =
     ctx.Query<Tables.Sense>(
         sql
             """
@@ -266,21 +271,22 @@ let getSenses (entryId: int) (ctx: DbConnection): Sense list =
         from Senses as s
         where s.EntryId = @EntryId""",
         {| EntryId = entryId |}
-    ) |> Seq.map (fun s ->
-        let result: Sense =
-            {
-                KanjiRestrictions = getKanjiRestrictions s.Id ctx
-                ReadingRestrictions = getReadingRestrictions s.Id ctx
-                PartsOfSpeech = getPartsOfSpeech s.Id ctx
-                CrossReferences = getCrossReferences s.Id ctx
-                Antonyms = getAntonyms s.Id ctx
-                Fields = getFields s.Id ctx
-                MiscellaneousInformation = getMiscellaneousInformation s.Id ctx
-                AdditionalInformation = getAdditionalInformation s.Id ctx
-                LanguageSources = getLanguageSources s.Id ctx
-                Dialects = getDialects s.Id ctx
-                Glosses = getGlosses s.Id ctx
-            }
+    )
+    |> Seq.map (fun s ->
+        let result: Sense = {
+            KanjiRestrictions = getKanjiRestrictions s.Id ctx
+            ReadingRestrictions = getReadingRestrictions s.Id ctx
+            PartsOfSpeech = getPartsOfSpeech s.Id ctx
+            CrossReferences = getCrossReferences s.Id ctx
+            Antonyms = getAntonyms s.Id ctx
+            Fields = getFields s.Id ctx
+            MiscellaneousInformation = getMiscellaneousInformation s.Id ctx
+            AdditionalInformation = getAdditionalInformation s.Id ctx
+            LanguageSources = getLanguageSources s.Id ctx
+            Dialects = getDialects s.Id ctx
+            Glosses = getGlosses s.Id ctx
+        }
+
         result)
     |> Seq.toList
 
@@ -292,7 +298,8 @@ let getTranslations (entryId: int) (ctx: DbConnection) =
         from Translations as t
         where t.EntryId = @EntryId""",
         {| EntryId = entryId |}
-    ) |> Seq.map (fun t ->
+    )
+    |> Seq.map (fun t ->
         let nameTypes =
             ctx.Query<string>(
                 sql
@@ -303,6 +310,7 @@ let getTranslations (entryId: int) (ctx: DbConnection) =
                 {| TranslationId = t.Id |}
             )
             |> Seq.toList
+
         let crossReferences =
             ctx.Query<Tables.TranslationCrossReference>(
                 sql
@@ -311,13 +319,14 @@ let getTranslations (entryId: int) (ctx: DbConnection) =
                 from TranslationCrossReferences as tcr
                 where tcr.TranslationId = @TranslationId""",
                 {| TranslationId = t.Id |}
-            ) |> Seq.map (fun tcr ->
-                {
-                    Kanji = tcr.ReferenceKanjiElement
-                    Reading = tcr.ReferenceReadingElement
-                    Index = tcr.ReferenceTranslation
-                })
+            )
+            |> Seq.map (fun tcr -> {
+                Kanji = tcr.ReferenceKanjiElement
+                Reading = tcr.ReferenceReadingElement
+                Index = tcr.ReferenceTranslation
+            })
             |> Seq.toList
+
         let contents =
             ctx.Query<Tables.TranslationContent>(
                 sql
@@ -326,12 +335,15 @@ let getTranslations (entryId: int) (ctx: DbConnection) =
                 from TranslationContents as tc
                 where tc.TranslationId = @TranslationId""",
                 {| TranslationId = t.Id |}
-            ) |> Seq.map (fun tc ->
+            )
+            |> Seq.map (fun tc ->
                 {
                     Value = tc.Value
                     LanguageCode = tc.Language
-                }: TranslationContents)
+                }
+                : TranslationContents)
             |> Seq.toList
+
         {
             NameTypes = nameTypes
             CrossReferences = crossReferences
@@ -341,14 +353,13 @@ let getTranslations (entryId: int) (ctx: DbConnection) =
 
 let getWordsByIds (ids: int list) (ctx: DbConnection) =
     ids
-    |> List.map (fun id ->
-        {
-            Id = id
-            KanjiElements = getKanjiElements id ctx
-            ReadingElements = getReadingElements id ctx
-            Senses = getSenses id ctx
-            Translations = getTranslations id ctx
-        })
+    |> List.map (fun id -> {
+        Id = id
+        KanjiElements = getKanjiElements id ctx
+        ReadingElements = getReadingElements id ctx
+        Senses = getSenses id ctx
+        Translations = getTranslations id ctx
+    })
 
 let getWordLiterals (word: string) (ctx: DbConnection) =
     let ids = getIdsForWordLiterals word ctx
