@@ -164,13 +164,7 @@ let makePatternCondition (pattern: string option) =
 
 // TODO: Implement search by key radical
 let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
-    ctx.Execute(
-        sql
-            "
-        drop table if exists SearchRadicals;
-
-        create table SearchRadicals (Value text not null);"
-    )
+    ctx.Execute(sql "create temp table SearchRadicals (Value text not null);")
     |> ignore
 
     for searchRadical in query.SearchRadicals do
@@ -180,13 +174,7 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
         )
         |> ignore
 
-    ctx.Execute(
-        sql
-            "
-        drop table if exists SearchRadicalMeanings;
-
-        create table SearchRadicalMeanings (Value text not null);"
-    )
+    ctx.Execute(sql "create temp table SearchRadicalMeanings (Value text not null);")
     |> ignore
 
     for searchRadicalMeaning in query.SearchRadicalMeanings do
@@ -212,13 +200,7 @@ let getKanjiIds (query: GetKanjiQuery) (ctx: DbConnection) =
         )
         |> Seq.toList
 
-    ctx.Execute(
-        sql
-            "
-        drop table if exists SearchRadicalIds;
-
-        create table SearchRadicalIds (Id number not null);"
-    )
+    ctx.Execute(sql "create temp table SearchRadicalIds (Id number not null);")
     |> ignore
 
     for radicalId in radicalIds do

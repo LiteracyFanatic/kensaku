@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>kensaku</id>
+    <version><VERSION></version>
+    <authors>Jordan Cannon</authors>
+    <tags>japanese dictionary kanji radicals jmdict kanjidic2 jmnedict radkfile kradfile</tags>
+    <projectUrl>https://github.com/LiteracyFanatic/kensaku</projectUrl>
+    <licenseUrl>https://github.com/LiteracyFanatic/kensaku/blob/master/LICENSE</licenseUrl>
+    <summary>Quick and easy search for Japanese kanji, radicals, and words</summary>
+    <description>Quick and easy search for Japanese kanji, radicals, and words</description>
+    <title>Kensaku CLI Japanese Dictionary</title>
+    <dependencies>
+      <dependency id="dotnet-runtime" version="9.0" />
+    </dependencies>
+  </metadata>
+</package>

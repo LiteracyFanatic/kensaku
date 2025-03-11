@@ -1,0 +1,15 @@
+#!/bin/bash
+rm -rf dist
+mkdir dist
+
+echo "Building for Linux"
+dotnet publish -c Release -r linux-x64 --no-self-contained -o dist src/CLI/
+mv dist/kensaku "dist/kensaku-linux-x64"
+
+echo "Building for Windows"
+dotnet publish -c Release -r win-x64 --no-self-contained -o dist src/CLI/
+mv dist/kensaku.exe "dist/kensaku-win-x64.exe"
+
+echo "Generating database"
+dotnet run --project src/CreateDatabase/
+mv data/kensaku.db dist/

@@ -1,0 +1,6 @@
+Package: kensaku
+Version: <VERSION>
+Architecture: amd64
+Maintainer: Jordan Cannon <LiteracyFanatic@gmail.com>
+Description: Quick and easy search for Japanese kanji, radicals, and words
+Depends: dotnet-runtime-9.0

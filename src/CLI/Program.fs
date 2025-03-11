@@ -1,3 +1,5 @@
+open System
+open System.IO
 open Argu
 open Kensaku.Database
 open Kensaku.CLI.KanjiCommand
@@ -21,7 +23,19 @@ type Args =
             | Version -> "display the version info"
 
 let getDbConnection () =
-    let ctx = new SqliteConnection("Data Source=data/kensaku.db")
+    let dbPath =
+        match Environment.GetEnvironmentVariable("KENSAKU_DB_PATH") with
+        | null
+        | "" ->
+            if OperatingSystem.IsWindows() then
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "kensaku", "kensaku.db")
+            else if OperatingSystem.IsLinux() then
+                "/usr/share/kensaku/kensaku.db"
+            else
+                failwith "Unsupported operating system"
+        | path -> path
+
+    let ctx = new SqliteConnection($"Data Source=%s{dbPath}")
     Schema.registerTypeHandlers ()
     Schema.registerRegexpFunction ctx
     ctx

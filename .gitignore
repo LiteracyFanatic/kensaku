@@ -5,3 +5,4 @@ obj/
 .idea/
 data/
 *.DotSettings.user
+dist/

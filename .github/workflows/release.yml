@@ -1,0 +1,157 @@
+name: Build and Package Kensaku
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g., 1.2.3)"
+        required: true
+
+jobs:
+  set-version:
+    name: Set Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.VERSION_CLEAN }}
+    steps:
+      - name: Extract Version (Remove 'v' Prefix)
+        id: extract-version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION_RAW="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION_RAW="${{ inputs.version }}"
+          fi
+          VERSION_CLEAN="${VERSION_RAW#v}"
+          echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_ENV
+          echo "VERSION_CLEAN=$VERSION_CLEAN" >> $GITHUB_OUTPUT
+
+  build-kensaku:
+    name: Build Kensaku Binaries
+    runs-on: ubuntu-latest
+    needs: set-version
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Run Publish Script
+        run: ./publish
+        env:
+          WANI_KANI_API_KEY: ${{ secrets.WANI_KANI_API_KEY }}
+
+      - name: Upload Packages to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.set-version.outputs.version }}
+
+  linux-packages:
+    name: Build Linux Packages
+    runs-on: ubuntu-latest
+    needs: [set-version, build-kensaku]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y rpm dpkg-dev
+
+      - name: Build Debian Package
+        run: |
+          mkdir -p packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/DEBIAN
+          cp packaging/debian/DEBIAN/control packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/DEBIAN/
+          sed -i "s|<VERSION>|${{ needs.set-version.outputs.version }}|g" packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/DEBIAN/control
+
+          # Create directories for files
+          mkdir -p packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/bin
+          mkdir -p packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/share/kensaku
+
+          # Download built binaries
+          curl -L -o packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/bin/kensaku \
+            https://github.com/LiteracyFanatic/kensaku/releases/download/v${{ needs.set-version.outputs.version }}/kensaku-linux-x64
+
+          curl -L -o packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/share/kensaku/kensaku.db \
+            https://github.com/LiteracyFanatic/kensaku/releases/download/v${{ needs.set-version.outputs.version }}/kensaku.db
+
+          # Set correct permissions
+          chmod 755 packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/bin/kensaku
+          chmod 644 packaging/debian/kensaku_${{ needs.set-version.outputs.version }}/usr/share/kensaku/kensaku.db
+
+          # Build the Debian package
+          dpkg-deb --build packaging/debian/kensaku_${{ needs.set-version.outputs.version }}
+
+          # Move the built package to artifacts directory
+          mkdir -p artifacts
+          mv packaging/debian/kensaku_${{ needs.set-version.outputs.version }}.deb artifacts/kensaku.deb
+
+      - name: Update RPM Version
+        run: |
+          sed -i "s|<VERSION>|${{ needs.set-version.outputs.version }}|g" packaging/rpm/kensaku.spec
+
+      - name: Build RPM Package
+        run: |
+          rpmbuild -bb packaging/rpm/kensaku.spec
+          mkdir -p artifacts
+          mv ~/rpmbuild/RPMS/x86_64/kensaku-*.rpm artifacts/kensaku.rpm
+
+      - name: Upload Built Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: artifacts/
+
+  windows-chocolatey:
+    name: Build Chocolatey Package
+    runs-on: windows-latest
+    needs: [set-version, build-kensaku]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Chocolatey
+        run: |
+          choco install chocolatey
+
+      - name: Update Chocolatey Package Version
+        run: |
+          sed -i "s|<VERSION>|${{ needs.set-version.outputs.version }}|g" packaging/chocolatey/*
+
+      - name: Build Chocolatey Package
+        run: |
+          cd packaging/chocolatey
+          cat kensaku.nuspec
+          choco pack
+          mkdir -p ../../artifacts
+          mv kensaku.${{ needs.set-version.outputs.version }}.nupkg ../../artifacts/kensaku-choco.nupkg
+
+      - name: Upload Built Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: artifacts/
+
+  upload-packages:
+    name: Upload Packages to GitHub Release
+    needs: [set-version, linux-packages, windows-chocolatey]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Built Packages
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Upload Packages to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.set-version.outputs.version }}
