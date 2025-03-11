@@ -4,3 +4,4 @@ obj/
 .ionide/
 .idea/
 data/
+*.DotSettings.user
