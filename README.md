@@ -8,9 +8,14 @@
 
 ### Windows
 
+Follow the instructions [here](https://chocolatey.org/install) to install the Chocolatey package manager. Then run the following command:
+
 ```powershell
-choco install -y kensaku
+choco install -y --version 0.1.0 kensaku
 ```
+
+> [!NOTE]
+> The Chocolatey package is currently being reviewed by moderators. If you want to install it before the package is approved, you need to explicitly specify the version number with `--version 0.1.0`.
 
 ### Debian
 
