@@ -122,6 +122,24 @@ One last useful trick is to use the `--pattern` flag to "fill in the blank" when
 
 If you want to use kensaku from a shell script you can use `--format json` to get the results in a machine-readable format.
 
+## Troubleshooting
+
+**Q: Why does the output look wrong? I see blank squares or question marks instead of kanji.**
+
+**A:** Make sure you are using a font that supports Japanese characters. On Windows you may need to add the following line to your PowerShell profile:
+
+```powershell
+[console]::InputEncoding = [console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+```
+
+If you don't want to modify your profile or need to work with `cmd.exe`, you can instead do the following:
+
+1. Run `intl.cpl`.
+2. Click the Administrative tab.
+3. Click the Change system locale button.
+4. Check the "Use Unicode UTF-8 for worldwide language support" checkbox.
+5. Reboot.
+
 ## Licenses
 
 kensaku is made available under the terms of the MIT License. See [LICENSE](LICENSE) for details.
