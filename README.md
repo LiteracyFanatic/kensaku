@@ -123,9 +123,11 @@ If you happen to know the reading or meaning you can use the corresponding flags
 
 One last useful trick is to use the `--pattern` flag to "fill in the blank" when you come across a word with a single unknown kanji. For example, if you come across the word `祝賀`, and know how to type `祝` but not `賀`, you can search for it using `kensaku kanji --radicals power shellfish --pattern 祝_`
 
-## Scripting
+## Programmatic Usage
 
-If you want to use kensaku from a shell script you can use `--format json` to get the results in a machine-readable format.
+Kensaku can be used from .NET as a library or from a shell script using `--format json`. The [examples](examples) directory contains a script that can be used to generate [Anki](https://apps.ankiweb.net) cards for studying vocabulary. The script takes a list of words as input and outputs a CSV file that can be imported into Anki. There is also an accompanying script that can be used to extract a list of vocabulary words ordered by frequency from an EPUB file. [Pandoc](https://pandoc.org) is required to extract the text from the EPUB file and [MeCab](https://taku910.github.io/mecab) is required to tokenize the text.
+
+![Anki Card](examples/AnkiCard.png)
 
 ## Troubleshooting
 

@@ -1,0 +1,29 @@
+.card {
+    font-size: 20px;
+    background-color: #eee;
+    max-width: 600px;
+    margin: auto;
+}
+
+.parts-of-speech {
+    font-size: 13px;
+    color: #aaa;
+    font-weight: bold;
+    margin-bottom: 0px;
+}
+
+.details {
+    font-size: 14px;
+    color: #bbb;
+    margin-left: 8px;
+}
+
+.expression {
+    font-weight: normal;
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+    font-weight: normal;
+}
