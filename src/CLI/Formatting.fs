@@ -272,39 +272,64 @@ let formatLanguageSource (languageSource: LanguageSource) =
     sb.ToString()
 
 let getReadings (kanji: KanjiElement) (readings: ReadingElement list) =
-    let restrictedReadings =
-        readings |> List.filter (fun re -> List.contains kanji.Value re.Restrictions)
+    readings
+    |> List.filter (fun re -> re.Restrictions.IsEmpty || List.contains kanji.Value re.Restrictions)
 
-    if restrictedReadings.Length > 0 then
-        restrictedReadings
-    else
-        readings |> List.filter (fun re -> re.Restrictions.Length = 0)
+type EntryLabel = {
+    Kanji: string option
+    Reading: string
+} with
+
+    override this.ToString() =
+        this.Kanji
+        |> Option.map (fun k -> $"%s{k} 【{this.Reading}】")
+        |> Option.defaultValue this.Reading
 
 let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
-    let trueReadings = word.ReadingElements |> List.filter (fun re -> re.IsTrueReading)
+    let trueReadings =
+        word.ReadingElements
+        |> List.filter (fun re ->
+            re.IsTrueReading
+            && re.Information |> List.contains "search-only kana form" |> not)
 
     let falseReadings =
         word.ReadingElements |> List.filter (fun re -> re.IsTrueReading |> not)
 
-    let kanjiReadingPairs =
+    let nonSearchKanji =
         word.KanjiElements
         |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
-        |> List.collect (fun ke -> getReadings ke trueReadings |> List.map (fun re -> ke, re))
-        |> List.indexed
-        |> List.sortByDescending (fun (i, (ke, re)) ->
-            let a = if ke.Priority.Length > 0 then 1 else 0
-            let b = if re.Priority.Length > 0 then 1 else 0
-            (a, b, -i))
-        |> List.map snd
+
+    let kanjiReadingPairs =
+        match nonSearchKanji with
+        | [] ->
+            trueReadings
+            |> List.sortByDescending (fun re -> if re.Priority.Length > 0 then 1 else 0)
+            |> List.map (fun re -> {
+                Kanji = None
+                Reading = re.Value
+            })
+        | _ ->
+            word.KanjiElements
+            |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
+            |> List.collect (fun ke -> getReadings ke trueReadings |> List.map (fun re -> ke, re))
+            |> List.indexed
+            |> List.sortByDescending (fun (i, (ke, re)) ->
+                let a = if ke.Priority.Length > 0 then 1 else 0
+                let b = if re.Priority.Length > 0 then 1 else 0
+                (a, b, -i))
+            |> List.map (fun (_, (ke, re)) -> {
+                Kanji = Some ke.Value
+                Reading = re.Value
+            })
 
     kanjiReadingPairs.Head, kanjiReadingPairs.Tail, falseReadings
 
 
 let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
-    let (primaryKanji, primaryReading), alternateForms, falseReadings =
+    let primaryEntryLabel, alternateForms, falseReadings =
         getPrimaryAndAlternateForms word
 
-    console.MarkupLineNonBreaking($"%s{primaryKanji.Value} 【%s{primaryReading.Value}】")
+    console.MarkupLineNonBreaking(primaryEntryLabel.Kanji |> Option.defaultValue primaryEntryLabel.Reading)
 
     let senses =
         word.Senses
@@ -400,8 +425,7 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
                 console.WriteLine()
 
     let otherForms =
-        (alternateForms |> List.map (fun (k, r) -> $"%s{k.Value} 【%s{r.Value}】"))
-        @ (falseReadings |> List.map _.Value)
+        (alternateForms |> List.map _.ToString()) @ (falseReadings |> List.map _.Value)
         |> String.concat ", "
 
     if otherForms.Length > 0 then
@@ -411,6 +435,10 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
 
     let kanjiNotes =
         word.KanjiElements
+        |> List.map (fun ke -> {
+            ke with
+                Information = ke.Information |> List.filter (fun i -> i <> "search-only kanji form")
+        })
         |> List.filter (fun ke -> ke.Information.Length > 0)
         |> List.map (fun ke ->
             let info = ke.Information |> String.concat ", "
@@ -418,6 +446,10 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
 
     let readingNotes =
         word.ReadingElements
+        |> List.map (fun re -> {
+            re with
+                Information = re.Information |> List.filter (fun i -> i <> "search-only kana form")
+        })
         |> List.filter (fun re -> re.Information.Length > 0)
         |> List.map (fun re ->
             let info = re.Information |> String.concat ", "
