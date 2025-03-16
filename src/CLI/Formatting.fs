@@ -3,7 +3,6 @@ module CLI.Formatting
 open System
 open System.Diagnostics
 open System.IO
-open System.Text
 open System.Text.Encodings.Web
 open System.Text.Json
 open System.Text.Json.Serialization
@@ -243,88 +242,6 @@ let printKanji (console: StringWriterAnsiConsole) (kanji: GetKanjiQueryResult) =
     if kanji.CodePoints.Jis213.IsSome then
         console.WriteLineNonBreaking($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}")
 
-let formatCrossReference (crossReference: CrossReference) =
-    [
-        crossReference.Kanji
-        crossReference.Reading
-        crossReference.Index |> Option.map (sprintf "%i")
-    ]
-    |> List.filter Option.isSome
-    |> List.map Option.get
-    |> String.concat " "
-    |> sprintf "See also %s"
-
-let formatAntonym (antonym: Antonym) =
-    [ antonym.Kanji; antonym.Reading ]
-    |> List.filter Option.isSome
-    |> List.map Option.get
-    |> String.concat " "
-
-let formatLanguageSource (languageSource: LanguageSource) =
-    let sb = StringBuilder()
-
-    sb.AppendLine($"From %s{languageSource.Code} \"%s{languageSource.Value}\"")
-    |> ignore
-
-    if languageSource.IsWasei then
-        sb.AppendLine(". Wasei (word made in Japan)") |> ignore
-
-    sb.ToString()
-
-let getReadings (kanji: KanjiElement) (readings: ReadingElement list) =
-    readings
-    |> List.filter (fun re -> re.Restrictions.IsEmpty || List.contains kanji.Value re.Restrictions)
-
-type EntryLabel = {
-    Kanji: string option
-    Reading: string
-} with
-
-    override this.ToString() =
-        this.Kanji
-        |> Option.map (fun k -> $"%s{k} 【{this.Reading}】")
-        |> Option.defaultValue this.Reading
-
-let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
-    let trueReadings =
-        word.ReadingElements
-        |> List.filter (fun re ->
-            re.IsTrueReading
-            && re.Information |> List.contains "search-only kana form" |> not)
-
-    let falseReadings =
-        word.ReadingElements |> List.filter (fun re -> re.IsTrueReading |> not)
-
-    let nonSearchKanji =
-        word.KanjiElements
-        |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
-
-    let kanjiReadingPairs =
-        match nonSearchKanji with
-        | [] ->
-            trueReadings
-            |> List.sortByDescending (fun re -> if re.Priority.Length > 0 then 1 else 0)
-            |> List.map (fun re -> {
-                Kanji = None
-                Reading = re.Value
-            })
-        | _ ->
-            word.KanjiElements
-            |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
-            |> List.collect (fun ke -> getReadings ke trueReadings |> List.map (fun re -> ke, re))
-            |> List.indexed
-            |> List.sortByDescending (fun (i, (ke, re)) ->
-                let a = if ke.Priority.Length > 0 then 1 else 0
-                let b = if re.Priority.Length > 0 then 1 else 0
-                (a, b, -i))
-            |> List.map (fun (_, (ke, re)) -> {
-                Kanji = Some ke.Value
-                Reading = re.Value
-            })
-
-    kanjiReadingPairs.Head, kanjiReadingPairs.Tail, falseReadings
-
-
 let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
     let primaryEntryLabel, alternateForms, falseReadings =
         getPrimaryAndAlternateForms word
@@ -356,16 +273,16 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
                 |> String.concat ", "
 
             let crossReferences =
-                sense.CrossReferences |> List.map formatCrossReference |> String.concat ", "
+                sense.CrossReferences |> List.map _.ToString() |> String.concat ", "
 
-            let antonyms = sense.Antonyms |> List.map formatAntonym |> String.concat ", "
+            let antonyms = sense.Antonyms |> List.map _.ToString() |> String.concat ", "
             let fields = sense.Fields |> String.concat ", "
             let miscellaneousInformation = sense.MiscellaneousInformation |> String.concat ", "
             let additionalInformation = sense.AdditionalInformation |> String.concat ", "
             let dialects = sense.Dialects |> String.concat ", "
 
             let languageSources =
-                sense.LanguageSources |> List.map formatLanguageSource |> String.concat ", "
+                sense.LanguageSources |> List.map _.ToString() |> String.concat ", "
 
             let details =
                 [
@@ -410,9 +327,7 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
             let contents = translation.Contents |> List.map _.Value |> String.concat "; "
 
             let crossReferences =
-                translation.CrossReferences
-                |> List.map formatCrossReference
-                |> String.concat ", "
+                translation.CrossReferences |> List.map _.ToString() |> String.concat ", "
 
             console.MarkupNonBreaking($"%i{i + 1 + senses.Length}. %s{contents}")
 

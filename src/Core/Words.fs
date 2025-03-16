@@ -14,6 +14,59 @@ type GetWordQueryResult = {
     Translations: Translation list
 }
 
+type EntryLabel = {
+    Kanji: string option
+    Reading: string
+} with
+
+    override this.ToString() =
+        this.Kanji
+        |> Option.map (fun k -> $"%s{k} 【{this.Reading}】")
+        |> Option.defaultValue this.Reading
+
+let getReadings (kanji: KanjiElement) (readings: ReadingElement list) =
+    readings
+    |> List.filter (fun re -> re.Restrictions.IsEmpty || List.contains kanji.Value re.Restrictions)
+
+let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
+    let trueReadings =
+        word.ReadingElements
+        |> List.filter (fun re ->
+            re.IsTrueReading
+            && re.Information |> List.contains "search-only kana form" |> not)
+
+    let falseReadings =
+        word.ReadingElements |> List.filter (fun re -> re.IsTrueReading |> not)
+
+    let nonSearchKanji =
+        word.KanjiElements
+        |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
+
+    let kanjiReadingPairs =
+        match nonSearchKanji with
+        | [] ->
+            trueReadings
+            |> List.sortByDescending (fun re -> if re.Priority.Length > 0 then 1 else 0)
+            |> List.map (fun re -> {
+                Kanji = None
+                Reading = re.Value
+            })
+        | _ ->
+            word.KanjiElements
+            |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
+            |> List.collect (fun ke -> getReadings ke trueReadings |> List.map (fun re -> ke, re))
+            |> List.indexed
+            |> List.sortByDescending (fun (i, (ke, re)) ->
+                let a = if ke.Priority.Length > 0 then 1 else 0
+                let b = if re.Priority.Length > 0 then 1 else 0
+                (a, b, -i))
+            |> List.map (fun (_, (ke, re)) -> {
+                Kanji = Some ke.Value
+                Reading = re.Value
+            })
+
+    kanjiReadingPairs.Head, kanjiReadingPairs.Tail, falseReadings
+
 let getIdsForWordLiterals (word: string) (ctx: DbConnection) =
     ctx.Query<int>(
         sql
@@ -180,11 +233,13 @@ let getAntonyms (senseId: int) (ctx: DbConnection) =
         where a.SenseId = @SenseId""",
         {| SenseId = senseId |}
     )
-    |> Seq.map (fun a -> {
-        Kanji = a.ReferenceKanjiElement
-        Reading = a.ReferenceReadingElement
-    })
     |> Seq.toList
+    |> List.map (fun a ->
+        ({
+            Kanji = a.ReferenceKanjiElement
+            Reading = a.ReferenceReadingElement
+        }
+        : Antonym))
 
 let getFields (senseId: int) (ctx: DbConnection) =
     ctx.Query<string>(

@@ -27,19 +27,42 @@ type CrossReference = {
     Kanji: string option
     Reading: string option
     Index: int option
-}
+} with
+
+    override this.ToString() =
+        [ this.Kanji; this.Reading; this.Index |> Option.map (sprintf "%i") ]
+        |> List.filter Option.isSome
+        |> List.map Option.get
+        |> String.concat " "
+        |> sprintf "See also %s"
 
 type Antonym = {
     Kanji: string option
     Reading: string option
-}
+} with
+
+    override this.ToString() =
+        [ this.Kanji; this.Reading ]
+        |> List.filter Option.isSome
+        |> List.map Option.get
+        |> String.concat " "
 
 type LanguageSource = {
     Value: string
     Code: string
     IsPartial: bool
     IsWasei: bool
-}
+} with
+
+    override this.ToString() =
+        let sb = StringBuilder()
+
+        sb.AppendLine($"From %s{this.Code} \"%s{this.Value}\"") |> ignore
+
+        if this.IsWasei then
+            sb.AppendLine(". Wasei (word made in Japan)") |> ignore
+
+        sb.ToString()
 
 type Gloss = {
     Value: string
