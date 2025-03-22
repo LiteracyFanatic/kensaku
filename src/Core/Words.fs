@@ -35,8 +35,13 @@ let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
             re.IsTrueReading
             && re.Information |> List.contains "search-only kana form" |> not)
 
-    let falseReadings =
-        word.ReadingElements |> List.filter (fun re -> re.IsTrueReading |> not)
+    let falseEntries =
+        word.ReadingElements
+        |> List.filter (fun re -> re.IsTrueReading |> not)
+        |> List.map (fun re -> {
+            Kanji = None
+            Reading = re.Value
+        })
 
     let nonSearchKanji =
         word.KanjiElements
@@ -46,26 +51,19 @@ let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
         match nonSearchKanji with
         | [] ->
             trueReadings
-            |> List.sortByDescending (fun re -> if re.Priority.Length > 0 then 1 else 0)
             |> List.map (fun re -> {
                 Kanji = None
                 Reading = re.Value
             })
         | _ ->
-            word.KanjiElements
-            |> List.filter (fun ke -> ke.Information |> List.contains "search-only kanji form" |> not)
+            nonSearchKanji
             |> List.collect (fun ke -> getReadings ke trueReadings |> List.map (fun re -> ke, re))
-            |> List.indexed
-            |> List.sortByDescending (fun (i, (ke, re)) ->
-                let a = if ke.Priority.Length > 0 then 1 else 0
-                let b = if re.Priority.Length > 0 then 1 else 0
-                (a, b, -i))
-            |> List.map (fun (_, (ke, re)) -> {
+            |> List.map (fun (ke, re) -> {
                 Kanji = Some ke.Value
                 Reading = re.Value
             })
 
-    kanjiReadingPairs.Head, kanjiReadingPairs.Tail, falseReadings
+    kanjiReadingPairs.Head, (kanjiReadingPairs.Tail @ falseEntries)
 
 let getIdsForWordLiterals (word: string) (ctx: DbConnection) =
     ctx.Query<int>(
@@ -90,7 +88,8 @@ let getKanjiElements (entryId: int) (ctx: DbConnection) =
             """
         select ke.*
         from KanjiElements as ke
-        where ke.EntryId = @EntryId""",
+        where ke.EntryId = @EntryId
+        order by ke.Id""",
         {| EntryId = entryId |}
     )
     |> Seq.map (fun ke ->
@@ -129,7 +128,8 @@ let getReadingElements (entryId: int) (ctx: DbConnection) =
             """
         select re.*
         from ReadingElements as re
-        where re.EntryId = @EntryId""",
+        where re.EntryId = @EntryId
+        order by re.Id""",
         {| EntryId = entryId |}
     )
     |> Seq.map (fun re ->

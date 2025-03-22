@@ -243,8 +243,7 @@ let printKanji (console: StringWriterAnsiConsole) (kanji: GetKanjiQueryResult) =
         console.WriteLineNonBreaking($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}")
 
 let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
-    let primaryEntryLabel, alternateForms, falseReadings =
-        getPrimaryAndAlternateForms word
+    let primaryEntryLabel, alternateForms = getPrimaryAndAlternateForms word
 
     console.MarkupLineNonBreaking(primaryEntryLabel.ToString())
 
@@ -339,9 +338,7 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
             if i < translations.Length - 1 then
                 console.WriteLine()
 
-    let otherForms =
-        (alternateForms |> List.map _.ToString()) @ (falseReadings |> List.map _.Value)
-        |> String.concat ", "
+    let otherForms = alternateForms |> List.map _.ToString() |> String.concat ", "
 
     if otherForms.Length > 0 then
         console.WriteLine()

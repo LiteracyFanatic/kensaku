@@ -26,12 +26,12 @@ type AnkiNote =
       Back: string }
 
 let getPrimaryForm (word: GetWordQueryResult) =
-    let primaryEntryLabel, _, _ = getPrimaryAndAlternateForms word
+    let primaryEntryLabel, _ = getPrimaryAndAlternateForms word
     primaryEntryLabel
 
 
 let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
-    let primaryEntryLabel, alternateForms, falseReadings =
+    let primaryEntryLabel, alternateForms =
         getPrimaryAndAlternateForms word
 
     let frontText =
@@ -115,7 +115,7 @@ let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
                                                   Html.span [ prop.className "details"; prop.text details ] ] ] ] ]
 
           let otherForms =
-              (alternateForms |> List.map _.ToString()) @ (falseReadings |> List.map _.Value)
+              (alternateForms |> List.map _.ToString())
               |> String.concat ", "
 
           if otherForms.Length > 0 then
@@ -178,7 +178,7 @@ let getPreferredEntries (word: string) (entries: GetWordQueryResult list) =
 
     nonNameEntries
     |> List.where (fun e ->
-        let primaryEntryLabel, _, _ = getPrimaryAndAlternateForms e
+        let primaryEntryLabel, _ = getPrimaryAndAlternateForms e
         primaryEntryLabel.Kanji = Some word)
     |> List.tryNotEmpty
     |> Option.defaultValue nonNameEntries
