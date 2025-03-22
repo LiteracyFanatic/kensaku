@@ -42,9 +42,7 @@ let mecab (input: Stream) =
     use p = Process.Start(psi)
 
     let stdinTask =
-        input
-            .CopyToAsync(p.StandardInput.BaseStream)
-            .ContinueWith(fun _ -> p.StandardInput.Close())
+        input.CopyToAsync(p.StandardInput.BaseStream).ContinueWith(fun _ -> p.StandardInput.Close())
 
     let resultStream = new MemoryStream()
 

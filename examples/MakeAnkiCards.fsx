@@ -20,10 +20,11 @@ module List =
     let tryNotEmpty (list: 'a list) =
         if list.IsEmpty then None else Some list
 
-type AnkiNote =
-    { Word: string
-      Front: string
-      Back: string }
+type AnkiNote = {
+    Word: string
+    Front: string
+    Back: string
+}
 
 let getPrimaryForm (word: GetWordQueryResult) =
     let primaryEntryLabel, _ = getPrimaryAndAlternateForms word
@@ -31,8 +32,7 @@ let getPrimaryForm (word: GetWordQueryResult) =
 
 
 let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
-    let primaryEntryLabel, alternateForms =
-        getPrimaryAndAlternateForms word
+    let primaryEntryLabel, alternateForms = getPrimaryAndAlternateForms word
 
     let frontText =
         if needsFurigana then
@@ -42,116 +42,125 @@ let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
 
     let front = [ Html.h1 [ prop.className "expression"; prop.text frontText ] ]
 
-    let back =
-        [ yield Html.h1 [ prop.className "expression"; prop.text (primaryEntryLabel.ToString()) ]
+    let back = [
+        yield Html.h1 [ prop.className "expression"; prop.text (primaryEntryLabel.ToString()) ]
 
-          yield Html.hr []
+        yield Html.hr []
 
-          let senses =
-              word.Senses
-              |> List.filter (fun sense -> sense.Glosses |> List.exists (fun gloss -> gloss.LanguageCode = "eng"))
+        let senses =
+            word.Senses
+            |> List.filter (fun sense -> sense.Glosses |> List.exists (fun gloss -> gloss.LanguageCode = "eng"))
 
-          if senses.Length > 0 then
-              yield Html.h2 [ prop.text "Meanings" ]
+        if senses.Length > 0 then
+            yield Html.h2 [ prop.text "Meanings" ]
 
-              yield
-                  Html.ol
-                      [ prop.children
-                            [ for i in 0 .. senses.Length - 1 do
-                                  let sense = senses[i]
-                                  let partsOfSpeech = sense.PartsOfSpeech |> String.concat ", "
+            yield
+                Html.ol [
+                    prop.children [
+                        for i in 0 .. senses.Length - 1 do
+                            let sense = senses[i]
+                            let partsOfSpeech = sense.PartsOfSpeech |> String.concat ", "
 
-                                  let glosses = sense.Glosses |> List.map _.Value |> String.concat "; "
+                            let glosses = sense.Glosses |> List.map _.Value |> String.concat "; "
 
-                                  let kanjiRestrictions =
-                                      sense.KanjiRestrictions
-                                      |> List.map (sprintf "Only applies to %s")
-                                      |> String.concat ", "
+                            let kanjiRestrictions =
+                                sense.KanjiRestrictions
+                                |> List.map (sprintf "Only applies to %s")
+                                |> String.concat ", "
 
-                                  let readingRestrictions =
-                                      sense.ReadingRestrictions
-                                      |> List.map (sprintf "Only applies to %s")
-                                      |> String.concat ", "
+                            let readingRestrictions =
+                                sense.ReadingRestrictions
+                                |> List.map (sprintf "Only applies to %s")
+                                |> String.concat ", "
 
-                                  let crossReferences =
-                                      sense.CrossReferences |> List.map _.ToString() |> String.concat ", "
+                            let crossReferences =
+                                sense.CrossReferences |> List.map _.ToString() |> String.concat ", "
 
-                                  let antonyms = sense.Antonyms |> List.map _.ToString() |> String.concat ", "
-                                  let fields = sense.Fields |> String.concat ", "
-                                  let miscellaneousInformation = sense.MiscellaneousInformation |> String.concat ", "
-                                  let additionalInformation = sense.AdditionalInformation |> String.concat ", "
-                                  let dialects = sense.Dialects |> String.concat ", "
+                            let antonyms = sense.Antonyms |> List.map _.ToString() |> String.concat ", "
+                            let fields = sense.Fields |> String.concat ", "
+                            let miscellaneousInformation = sense.MiscellaneousInformation |> String.concat ", "
+                            let additionalInformation = sense.AdditionalInformation |> String.concat ", "
+                            let dialects = sense.Dialects |> String.concat ", "
 
-                                  let languageSources =
-                                      sense.LanguageSources |> List.map _.ToString() |> String.concat ", "
+                            let languageSources =
+                                sense.LanguageSources |> List.map _.ToString() |> String.concat ", "
 
-                                  let details =
-                                      [ if fields.Length > 0 then
-                                            $"%s{fields}"
-                                        if antonyms.Length > 0 then
-                                            $"Antonyms: %s{antonyms}"
-                                        if miscellaneousInformation.Length > 0 then
-                                            miscellaneousInformation
-                                        if dialects.Length > 0 then
-                                            $"%s{dialects}"
-                                        if languageSources.Length > 0 then
-                                            languageSources
-                                        if crossReferences.Length > 0 then
-                                            crossReferences
-                                        if additionalInformation.Length > 0 then
-                                            additionalInformation
-                                        if kanjiRestrictions.Length > 0 then
-                                            kanjiRestrictions
-                                        if readingRestrictions.Length > 0 then
-                                            readingRestrictions ]
-                                      |> String.concat ", "
+                            let details =
+                                [
+                                    if fields.Length > 0 then
+                                        $"%s{fields}"
+                                    if antonyms.Length > 0 then
+                                        $"Antonyms: %s{antonyms}"
+                                    if miscellaneousInformation.Length > 0 then
+                                        miscellaneousInformation
+                                    if dialects.Length > 0 then
+                                        $"%s{dialects}"
+                                    if languageSources.Length > 0 then
+                                        languageSources
+                                    if crossReferences.Length > 0 then
+                                        crossReferences
+                                    if additionalInformation.Length > 0 then
+                                        additionalInformation
+                                    if kanjiRestrictions.Length > 0 then
+                                        kanjiRestrictions
+                                    if readingRestrictions.Length > 0 then
+                                        readingRestrictions
+                                ]
+                                |> String.concat ", "
 
-                                  Html.p [ prop.className "parts-of-speech"; prop.text $"{partsOfSpeech}" ]
+                            Html.p [ prop.className "parts-of-speech"; prop.text $"{partsOfSpeech}" ]
 
-                                  Html.li
-                                      [ prop.children
-                                            [ Html.span [ prop.className "glosses"; prop.text glosses ]
-                                              if details.Length > 0 then
-                                                  Html.span [ prop.className "details"; prop.text details ] ] ] ] ]
+                            Html.li [
+                                prop.children [
+                                    Html.span [ prop.className "glosses"; prop.text glosses ]
+                                    if details.Length > 0 then
+                                        Html.span [ prop.className "details"; prop.text details ]
+                                ]
+                            ]
+                    ]
+                ]
 
-          let otherForms =
-              (alternateForms |> List.map _.ToString())
-              |> String.concat ", "
+        let otherForms = (alternateForms |> List.map _.ToString()) |> String.concat ", "
 
-          if otherForms.Length > 0 then
-              yield Html.h2 [ prop.text "Other Forms" ]
-              yield Html.p [ prop.text otherForms ]
+        if otherForms.Length > 0 then
+            yield Html.h2 [ prop.text "Other Forms" ]
+            yield Html.p [ prop.text otherForms ]
 
-          let kanjiNotes =
-              word.KanjiElements
-              |> List.map (fun ke ->
-                  { ke with
-                      Information = ke.Information |> List.filter (fun i -> i <> "search-only kanji form") })
-              |> List.filter (fun ke -> ke.Information.Length > 0)
-              |> List.map (fun ke ->
-                  let info = ke.Information |> String.concat ", "
-                  $"{ke.Value}: {info}")
+        let kanjiNotes =
+            word.KanjiElements
+            |> List.map (fun ke -> {
+                ke with
+                    Information = ke.Information |> List.filter (fun i -> i <> "search-only kanji form")
+            })
+            |> List.filter (fun ke -> ke.Information.Length > 0)
+            |> List.map (fun ke ->
+                let info = ke.Information |> String.concat ", "
+                $"{ke.Value}: {info}")
 
-          let readingNotes =
-              word.ReadingElements
-              |> List.map (fun re ->
-                  { re with
-                      Information = re.Information |> List.filter (fun i -> i <> "search-only kana form") })
-              |> List.filter (fun re -> re.Information.Length > 0)
-              |> List.map (fun re ->
-                  let info = re.Information |> String.concat ", "
-                  $"{re.Value}: {info}")
+        let readingNotes =
+            word.ReadingElements
+            |> List.map (fun re -> {
+                re with
+                    Information = re.Information |> List.filter (fun i -> i <> "search-only kana form")
+            })
+            |> List.filter (fun re -> re.Information.Length > 0)
+            |> List.map (fun re ->
+                let info = re.Information |> String.concat ", "
+                $"{re.Value}: {info}")
 
-          let notes = List.append kanjiNotes readingNotes
+        let notes = List.append kanjiNotes readingNotes
 
-          if notes.Length > 0 then
-              yield Html.h2 [ prop.text "Notes" ]
+        if notes.Length > 0 then
+            yield Html.h2 [ prop.text "Notes" ]
 
-              yield
-                  Html.ul
-                      [ prop.children
-                            [ for note in notes do
-                                  Html.li [ prop.text note ] ] ] ]
+            yield
+                Html.ul [
+                    prop.children [
+                        for note in notes do
+                            Html.li [ prop.text note ]
+                    ]
+                ]
+    ]
 
     front, back
 
@@ -207,9 +216,11 @@ let processFile (fileName: string) =
                     else
                         word
 
-                { Word = expression
-                  Front = Render.htmlView front
-                  Back = Render.htmlView back }))
+                {
+                    Word = expression
+                    Front = Render.htmlView front
+                    Back = Render.htmlView back
+                }))
 
     let config = CsvConfiguration(CultureInfo.InvariantCulture)
     config.ShouldQuote <- fun _ -> true
