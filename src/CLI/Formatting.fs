@@ -246,7 +246,7 @@ let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
     let primaryEntryLabel, alternateForms, falseReadings =
         getPrimaryAndAlternateForms word
 
-    console.MarkupLineNonBreaking(primaryEntryLabel.Kanji |> Option.defaultValue primaryEntryLabel.Reading)
+    console.MarkupLineNonBreaking(primaryEntryLabel.ToString())
 
     let senses =
         word.Senses
