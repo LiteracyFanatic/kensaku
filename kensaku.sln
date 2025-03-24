@@ -5,13 +5,13 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{ADFB1187-9780-46D3-996A-345C32F6BA1E}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Database", "src\Database\Database.fsproj", "{21882958-F84A-4E20-9388-366463A1C54A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Kensaku.Core", "src\Kensaku.Core\Kensaku.Core.fsproj", "{D23FA25B-2C97-4896-B4E7-EEC22725DC87}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Core", "src\Core\Core.fsproj", "{D23FA25B-2C97-4896-B4E7-EEC22725DC87}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Kensaku.CLI", "src\Kensaku.CLI\Kensaku.CLI.fsproj", "{2C718B5E-EF55-47FF-B6A3-DB3E293A2162}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CLI", "src\CLI\CLI.fsproj", "{2C718B5E-EF55-47FF-B6A3-DB3E293A2162}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Kensaku.CreateDatabase", "src\Kensaku.CreateDatabase\Kensaku.CreateDatabase.fsproj", "{27148F42-232F-486A-BD05-08FDFBF6BD32}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CreateDatabase", "src\CreateDatabase\CreateDatabase.fsproj", "{27148F42-232F-486A-BD05-08FDFBF6BD32}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Kensaku.DataSources", "src\Kensaku.DataSources\Kensaku.DataSources.fsproj", "{6D16AFF3-E930-4B25-A54B-9F8640A9BB04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,10 +22,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{21882958-F84A-4E20-9388-366463A1C54A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{21882958-F84A-4E20-9388-366463A1C54A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{21882958-F84A-4E20-9388-366463A1C54A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{21882958-F84A-4E20-9388-366463A1C54A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D23FA25B-2C97-4896-B4E7-EEC22725DC87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D23FA25B-2C97-4896-B4E7-EEC22725DC87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D23FA25B-2C97-4896-B4E7-EEC22725DC87}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -38,11 +34,15 @@ Global
 		{27148F42-232F-486A-BD05-08FDFBF6BD32}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27148F42-232F-486A-BD05-08FDFBF6BD32}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27148F42-232F-486A-BD05-08FDFBF6BD32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D16AFF3-E930-4B25-A54B-9F8640A9BB04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D16AFF3-E930-4B25-A54B-9F8640A9BB04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D16AFF3-E930-4B25-A54B-9F8640A9BB04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D16AFF3-E930-4B25-A54B-9F8640A9BB04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{21882958-F84A-4E20-9388-366463A1C54A} = {ADFB1187-9780-46D3-996A-345C32F6BA1E}
 		{D23FA25B-2C97-4896-B4E7-EEC22725DC87} = {ADFB1187-9780-46D3-996A-345C32F6BA1E}
 		{2C718B5E-EF55-47FF-B6A3-DB3E293A2162} = {ADFB1187-9780-46D3-996A-345C32F6BA1E}
 		{27148F42-232F-486A-BD05-08FDFBF6BD32} = {ADFB1187-9780-46D3-996A-345C32F6BA1E}
+		{6D16AFF3-E930-4B25-A54B-9F8640A9BB04} = {ADFB1187-9780-46D3-996A-345C32F6BA1E}
 	EndGlobalSection
 EndGlobal

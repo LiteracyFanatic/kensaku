@@ -1,5 +1,4 @@
-#r "../src/Database/bin/Debug/net9.0/Database.dll"
-#r "../src/Core/bin/Debug/net9.0/Core.dll"
+#r "../src/Kensaku.Core/bin/Debug/net9.0/Kensaku.Core.dll"
 #r "nuget: Feliz.ViewEngine"
 #r "nuget: CsvHelper"
 #r "nuget: Microsoft.Data.Sqlite"
@@ -9,10 +8,8 @@ open System
 open System.IO
 open CsvHelper.Configuration
 open Kensaku.Core.Words
-open Kensaku.Domain
 open Feliz.ViewEngine
-open Microsoft.Data.Sqlite
-open Kensaku.Database
+open Kensaku.Core
 open CsvHelper
 open System.Globalization
 
@@ -177,10 +174,7 @@ let getDbConnection () =
                 failwith "Unsupported operating system"
         | path -> path
 
-    let ctx = new SqliteConnection($"Data Source=%s{dbPath}")
-    Schema.registerTypeHandlers ()
-    Schema.registerRegexpFunction ctx
-    ctx
+    new KensakuConnection($"Data Source=%s{dbPath}")
 
 let getPreferredEntries (word: string) (entries: GetWordQueryResult list) =
     let nonNameEntries = entries |> List.where (fun e -> e.Senses.Length > 0)

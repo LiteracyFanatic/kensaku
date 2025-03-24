@@ -7,6 +7,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>embedded</DebugType>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RuneJsonConverter.fs" />
@@ -25,8 +26,7 @@
     <PackageReference Include="FSharp.SystemTextJson" Version="1.3.13" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Database/Database.fsproj" />
-    <ProjectReference Include="../Core/Core.fsproj" />
+    <ProjectReference Include="..\Kensaku.Core\Kensaku.Core.fsproj" />
   </ItemGroup>
   <Target Name="SetGitTag" BeforeTargets="BeforeBuild">
     <Exec Command="git describe --always" ConsoleToMsBuild="True">

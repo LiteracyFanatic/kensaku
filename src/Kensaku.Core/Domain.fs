@@ -1,4 +1,4 @@
-module Kensaku.Domain
+namespace Kensaku.Core.Domain
 
 open System
 open System.Text

@@ -1,4 +1,4 @@
-module Kensaku.Database.Tables
+namespace Kensaku.Core.Tables
 
 open System
 open System.Text

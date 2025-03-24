@@ -4,14 +4,16 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Utilities.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="Tables.fs" />
+    <Compile Include="TypeHandlers.fs" />
+    <Compile Include="KensakuConnection.fs" />
     <Compile Include="Kanji.fs" />
     <Compile Include="Words.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../Database/Database.fsproj" />
   </ItemGroup>
 </Project>

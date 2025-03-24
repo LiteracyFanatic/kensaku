@@ -1,4 +1,4 @@
-namespace CLI
+namespace Kensaku.CLI
 
 open System
 open System.IO

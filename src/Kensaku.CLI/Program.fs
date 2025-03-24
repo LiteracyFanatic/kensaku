@@ -1,12 +1,11 @@
 open System
 open System.IO
 open Argu
-open Kensaku.Database
+open Kensaku.Core
 open Kensaku.CLI.KanjiCommand
 open Kensaku.CLI.WordCommand
 open Kensaku.CLI.VersionCommand
 open Kensaku.CLI.LicensesCommand
-open Microsoft.Data.Sqlite
 
 type Args =
     | [<SubCommand; CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
@@ -35,10 +34,7 @@ let getDbConnection () =
                 failwith "Unsupported operating system"
         | path -> path
 
-    let ctx = new SqliteConnection($"Data Source=%s{dbPath}")
-    Schema.registerTypeHandlers ()
-    Schema.registerRegexpFunction ctx
-    ctx
+    new KensakuConnection($"Data Source=%s{dbPath}")
 
 [<EntryPoint>]
 let main argv =
