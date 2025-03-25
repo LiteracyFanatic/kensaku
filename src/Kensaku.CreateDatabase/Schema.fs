@@ -2,9 +2,11 @@ namespace Kensaku.Core
 
 module Schema =
     open System.IO
-    open System.Text
     open System.Reflection
+    open System.Text
+
     open Dapper
+
     open Kensaku
     open Kensaku.Core
 

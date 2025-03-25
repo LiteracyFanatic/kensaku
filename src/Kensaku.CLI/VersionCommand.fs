@@ -1,8 +1,8 @@
 namespace Kensaku.CLI
 
 module VersionCommand =
-    open System.Reflection
     open System.Linq
+    open System.Reflection
 
     let versionHandler () =
         let version =

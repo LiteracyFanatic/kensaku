@@ -1,8 +1,10 @@
 namespace Kensaku.Core
 
 open System.Text.RegularExpressions
+
 open Dapper
 open Microsoft.Data.Sqlite
+
 open Kensaku.Core.TypeHandlers
 
 type KensakuConnection(connectionString: string) as this =

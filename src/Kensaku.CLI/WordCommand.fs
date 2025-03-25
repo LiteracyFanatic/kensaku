@@ -3,11 +3,13 @@ namespace Kensaku.CLI
 
 module WordCommand =
     open System
+
     open Argu
+    open Spectre.Console
+
+    open Kensaku.CLI.Formatting
     open Kensaku.Core
     open Kensaku.Core.Words
-    open Kensaku.CLI.Formatting
-    open Spectre.Console
 
     type WordArgs =
         | [<MainCommand; Last>] Word of string

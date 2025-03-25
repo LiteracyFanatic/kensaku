@@ -5,11 +5,13 @@ module KanjiCommand =
     open System
     open System.Text
     open System.Text.RegularExpressions
+
     open Argu
+    open Spectre.Console
+
+    open Kensaku.CLI.Formatting
     open Kensaku.Core
     open Kensaku.Core.Kanji
-    open Kensaku.CLI.Formatting
-    open Spectre.Console
 
     type KanjiArgs =
         | Strokes of int

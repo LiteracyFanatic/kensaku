@@ -4,8 +4,9 @@ open System
 open System.Diagnostics
 open System.IO
 open System.Text.RegularExpressions
-open FSharp.Data
 open System.Threading.Tasks
+
+open FSharp.Data
 
 let hasKanjiRegex =
     Regex(@"[\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}]")

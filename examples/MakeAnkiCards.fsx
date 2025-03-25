@@ -5,13 +5,14 @@
 #r "nuget: Dapper"
 
 open System
+open System.Globalization
 open System.IO
+
+open CsvHelper
 open CsvHelper.Configuration
-open Kensaku.Core.Words
 open Feliz.ViewEngine
 open Kensaku.Core
-open CsvHelper
-open System.Globalization
+open Kensaku.Core.Words
 
 module List =
     let tryNotEmpty (list: 'a list) =

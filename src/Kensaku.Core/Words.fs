@@ -2,6 +2,7 @@ namespace Kensaku.Core
 
 module Words =
     open Dapper
+
     open Kensaku.Core.Domain
 
     type GetWordQueryResult = {

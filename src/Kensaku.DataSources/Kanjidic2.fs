@@ -68,8 +68,6 @@ type Character = {
 
 [<RequireQualifiedAccess>]
 module Kanjidic2 =
-
-    open System
     open System.Globalization
     open System.Xml.Linq
 

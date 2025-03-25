@@ -2,6 +2,7 @@ namespace Kensaku.CLI
 
 open System
 open System.IO
+
 open Spectre.Console
 open Spectre.Console.Rendering
 

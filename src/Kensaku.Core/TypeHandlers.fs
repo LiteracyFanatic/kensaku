@@ -2,7 +2,9 @@ namespace Kensaku.Core.TypeHandlers
 
 open System
 open System.Text
+
 open Dapper
+
 open Kensaku.Core
 
 type internal OptionHandler<'T>() =

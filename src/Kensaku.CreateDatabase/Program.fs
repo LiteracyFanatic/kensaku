@@ -2,12 +2,13 @@
 open System.IO
 open System.IO.Compression
 open System.Net.Http
+open System.Text
 open System.Text.Encodings.Web
 open System.Text.Json
 open System.Threading.Tasks
-open System.Text
-open Kensaku.DataSources
+
 open Kensaku.Core
+open Kensaku.DataSources
 
 let downloadGZippedResourceAsync (hc: HttpClient) (url: string) (path: string) =
     task {

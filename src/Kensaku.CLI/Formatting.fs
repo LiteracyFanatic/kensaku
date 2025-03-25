@@ -7,11 +7,13 @@ module Formatting =
     open System.Text.Encodings.Web
     open System.Text.Json
     open System.Text.Json.Serialization
+
+    open Spectre.Console
+
     open Kensaku.Core
+    open Kensaku.Core.Domain
     open Kensaku.Core.Kanji
     open Kensaku.Core.Words
-    open Kensaku.Core.Domain
-    open Spectre.Console
 
     type Format =
         | Text

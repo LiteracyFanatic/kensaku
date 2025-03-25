@@ -2,6 +2,7 @@ namespace Kensaku.Core
 
 module Kanji =
     open System.Text
+
     open Dapper
 
     type KeyRadical =

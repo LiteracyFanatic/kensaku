@@ -4,6 +4,7 @@ open System
 open System.Text
 open System.Text.Json
 open System.Text.Json.Serialization
+
 open Kensaku.Core
 
 type RuneJsonConverter() =

@@ -1,11 +1,13 @@
 open System
 open System.IO
+
 open Argu
-open Kensaku.Core
+
 open Kensaku.CLI.KanjiCommand
-open Kensaku.CLI.WordCommand
-open Kensaku.CLI.VersionCommand
 open Kensaku.CLI.LicensesCommand
+open Kensaku.CLI.VersionCommand
+open Kensaku.CLI.WordCommand
+open Kensaku.Core
 
 type Args =
     | [<SubCommand; CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
