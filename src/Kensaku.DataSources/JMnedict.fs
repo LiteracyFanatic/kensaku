@@ -1,5 +1,9 @@
 namespace Kensaku.DataSources
 
+open FSharp.Control
+open System.IO
+open System.Threading
+
 type TranslationContents = {
     Value: string
     LanguageCode: string
@@ -20,8 +24,7 @@ type JMnedictEntry = {
     Translations: Translation list
 }
 
-[<RequireQualifiedAccess>]
-module JMnedict =
+module private JMnedict =
     open System.Xml.Linq
 
     let private parseTranslationContents (el: XElement) : TranslationContents = {
@@ -35,12 +38,23 @@ module JMnedict =
         Contents = parseElementList "trans_det" parseTranslationContents el
     }
 
-    let getEntries (path: string) =
-        streamXmlElements "entry" path
-        |> Seq.map (fun entry -> {
+    let parseEntriesAsync (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
+        streamXmlElementsAsync "entry" stream closeStream ct
+        |> TaskSeq.map (fun entry -> {
             Id = entry.Element("ent_seq").Value |> int
             IsProperName = false
             KanjiElements = parseElementList "k_ele" JMdict.parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" JMdict.parseReadingElement entry
             Translations = parseElementList "trans" parseTranslation entry
         })
+
+[<AbstractClass; Sealed>]
+type JMnedict =
+    static member ParseEntriesAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        JMnedict.parseEntriesAsync stream false ct
+
+    static member ParseEntriesAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        let ct = defaultArg ct CancellationToken.None
+        JMnedict.parseEntriesAsync stream true ct

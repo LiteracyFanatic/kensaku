@@ -1,6 +1,9 @@
 namespace Kensaku.DataSources
 
+open FSharp.Control
+open System.IO
 open System.Text
+open System.Threading
 
 type KanjiElement = {
     Value: string
@@ -86,9 +89,7 @@ type JMdictEntry = {
     Senses: Sense list
 }
 
-[<RequireQualifiedAccess>]
-module JMdict =
-
+module private JMdict =
     open System
     open System.Xml.Linq
 
@@ -207,12 +208,23 @@ module JMdict =
         Glosses = parseElementList "gloss" parseGloss el
     }
 
-    let getEntries (path: string) =
-        streamXmlElements "entry" path
-        |> Seq.map (fun entry -> {
+    let parseEntriesAsync (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
+        streamXmlElementsAsync "entry" stream closeStream ct
+        |> TaskSeq.map (fun entry -> {
             Id = entry.Element("ent_seq").Value |> int
             IsProperName = false
             KanjiElements = parseElementList "k_ele" parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" parseReadingElement entry
             Senses = parseElementList "sense" parseSense entry
         })
+
+[<AbstractClass; Sealed>]
+type JMdict =
+    static member ParseEntriesAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        JMdict.parseEntriesAsync stream false ct
+
+    static member ParseEntriesAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        let ct = defaultArg ct CancellationToken.None
+        JMdict.parseEntriesAsync stream true ct

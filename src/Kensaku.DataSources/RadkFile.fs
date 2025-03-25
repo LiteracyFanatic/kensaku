@@ -1,6 +1,8 @@
 namespace Kensaku.DataSources
 
+open System.IO
 open System.Text
+open System.Threading
 
 type RadkEntry = {
     Radical: Rune
@@ -8,9 +10,7 @@ type RadkEntry = {
     Kanji: Set<Rune>
 }
 
-[<RequireQualifiedAccess>]
 module RadkFile =
-    open System.IO
     open System.Text.RegularExpressions
 
     let private replacements =
@@ -106,9 +106,7 @@ module RadkFile =
         | None -> None
         | n -> n
 
-    let private parseRadkFile (path: string) =
-        let text = File.ReadAllText(path, Encoding.GetEncoding("EUC-JP"))
-
+    let internal parseEntries (text: string) =
         Regex.Matches(text, @"^\$ (.) (\d+).*$([^$]+)", RegexOptions.Multiline)
         |> Seq.toList
         |> List.map (fun m ->
@@ -121,11 +119,28 @@ module RadkFile =
                 Kanji = set (m.Groups[3].Value.EnumerateRunes()) - set [ rune '\n'; rune '\u30FB' ]
             })
 
-    let getEntries (radkFilePath: string) (radkFile2Path: string) =
-        [ radkFilePath; radkFile2Path ]
-        |> List.collect parseRadkFile
+    let internal combineEntries (radkFileEntries: RadkEntry list) (radkFile2Entries: RadkEntry list) =
+        radkFileEntries @ radkFile2Entries
         |> List.groupBy _.Radical
         |> List.map (fun (radical, pair) ->
             match pair with
             | [ a; b ] -> { a with Kanji = a.Kanji + b.Kanji }
             | _ -> failwithf "Expected exactly one entry for %A in each radk file. Received %A." radical pair)
+
+[<AbstractClass; Sealed>]
+type RadkFile =
+    static member ParseEntriesAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
+        task {
+            let encoding = defaultArg encoding Encoding.UTF8
+            let ct = defaultArg ct CancellationToken.None
+            use sr = new StreamReader(stream, encoding)
+            let! text = sr.ReadToEndAsync(ct)
+            return RadkFile.parseEntries text
+        }
+
+    static member ParseEntriesAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        RadkFile.ParseEntriesAsync(stream, ?encoding = encoding, ?ct = ct)
+
+    static member CombineEntries(radkFileEntries: RadkEntry list, radkFile2Entries: RadkEntry list) =
+        RadkFile.combineEntries radkFileEntries radkFile2Entries

@@ -2,7 +2,10 @@ namespace Kensaku.DataSources
 
 [<AutoOpen>]
 module private Utilities =
+    open FSharp.Control
+    open System.IO
     open System.Text
+    open System.Threading
     open System.Xml
     open System.Xml.Linq
 
@@ -17,19 +20,25 @@ module private Utilities =
 
     let inline rune input = Rune.GetRuneAt(string input, 0)
 
-    let streamXmlElements (elementName: string) (path: string) =
-        // Parse the DTD and expand all entities
-        let settings =
-            XmlReaderSettings(DtdProcessing = DtdProcessing.Parse, MaxCharactersFromEntities = 0L)
+    let streamXmlElementsAsync (elementName: string) (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
+        taskSeq {
+            // Parse the DTD and expand all entities
+            let settings =
+                XmlReaderSettings(
+                    DtdProcessing = DtdProcessing.Parse,
+                    MaxCharactersFromEntities = 0L,
+                    Async = true,
+                    CloseInput = closeStream
+                )
 
-        let reader = XmlReader.Create(path, settings)
-        reader.MoveToContent() |> ignore
+            let reader = XmlReader.Create(stream, settings)
+            let! _ = reader.MoveToContentAsync()
 
-        seq {
             try
-                while reader.Read() do
+                while! reader.ReadAsync() do
                     if reader.NodeType = XmlNodeType.Element && reader.Name = elementName then
-                        XElement.ReadFrom(reader) :?> XElement
+                        let! xNode = XElement.ReadFromAsync(reader, ct)
+                        yield xNode :?> XElement
             finally
                 reader.Dispose()
         }

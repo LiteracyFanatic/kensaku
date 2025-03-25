@@ -12,4 +12,7 @@
     <Compile Include="Unicode.fs" />
     <Compile Include="WaniKani.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FSharp.Control.TaskSeq" Version="0.4.0" />
+  </ItemGroup>
 </Project>

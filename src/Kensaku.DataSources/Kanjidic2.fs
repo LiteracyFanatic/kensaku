@@ -1,7 +1,10 @@
 namespace Kensaku.DataSources
 
+open FSharp.Control
 open System
+open System.IO
 open System.Text
+open System.Threading
 
 type Kanjidic2Info = {
     FileVersion: int
@@ -66,8 +69,7 @@ type Character = {
     Nanori: string list
 }
 
-[<RequireQualifiedAccess>]
-module Kanjidic2 =
+module private Kanjidic2 =
     open System.Globalization
     open System.Xml.Linq
 
@@ -172,12 +174,15 @@ module Kanjidic2 =
         | null -> []
         | rm -> parseElementList "nanori" (_.Value) rm
 
-    let getInfo (path: string) =
-        streamXmlElements "header" path |> Seq.head |> parseHeader
+    let parseInfoAsync (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
+        task {
+            let! el = streamXmlElementsAsync "header" stream closeStream ct |> TaskSeq.head
+            return parseHeader el
+        }
 
-    let getEntries (path: string) =
-        streamXmlElements "character" path
-        |> Seq.map (fun entry -> {
+    let parseEntriesAsync (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
+        streamXmlElementsAsync "character" stream closeStream ct
+        |> TaskSeq.map (fun entry -> {
             Value = rune (entry.Element("literal").Value)
             CodePoints = parseElementList "cp_value" parseCodePoint (entry.Element("codepoint"))
             KeyRadicals = parseElementList "rad_value" parseKeyRadical (entry.Element("radical"))
@@ -195,3 +200,23 @@ module Kanjidic2 =
             Meanings = parseCharacterMeanings entry
             Nanori = parseNanori entry
         })
+
+[<AbstractClass; Sealed>]
+type Kanjidic2 =
+    static member ParseInfoAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        Kanjidic2.parseInfoAsync stream false ct
+
+    static member ParseInfoAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        let ct = defaultArg ct CancellationToken.None
+        Kanjidic2.parseInfoAsync stream true ct
+
+    static member ParseEntriesAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        Kanjidic2.parseEntriesAsync stream false ct
+
+    static member ParseEntriesAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        let ct = defaultArg ct CancellationToken.None
+        Kanjidic2.parseEntriesAsync stream true ct

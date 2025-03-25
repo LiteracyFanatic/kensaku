@@ -1,6 +1,7 @@
 namespace Kensaku.DataSources
 
 open System.Text
+open System.Threading
 
 type CJKRadicalValue = {
     RadicalCharacter: Rune
@@ -26,12 +27,11 @@ module Unicode =
     let private hexStringToRune (hexString: string) =
         Rune(Int32.Parse(hexString, NumberStyles.HexNumber))
 
-    [<RequireQualifiedAccess>]
-    module EquivalentUnifiedIdeograph =
-        let getEquivalentCharacters (path: string) =
+    module private EquivalentUnifiedIdeograph =
+        let parseEquivalentCharacters (text: string) =
             let groups = ResizeArray<Set<Rune>>()
 
-            for line in File.ReadAllLines(path) do
+            for line in text.ReplaceLineEndings().Split(Environment.NewLine) do
                 let m =
                     Regex.Match(
                         line,
@@ -59,12 +59,26 @@ module Unicode =
             |> Seq.collect (fun group -> group |> Seq.map (fun c -> c, group))
             |> Map.ofSeq
 
-    [<RequireQualifiedAccess>]
-    module CJKRadicals =
-        let getCJKRadicals (path: string) =
+    [<AbstractClass; Sealed>]
+    type EquivalentUnifiedIdeograph =
+        static member GetCharactersAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
+            task {
+                let encoding = defaultArg encoding Encoding.UTF8
+                let ct = defaultArg ct CancellationToken.None
+                use sr = new StreamReader(stream, encoding)
+                let! text = sr.ReadToEndAsync(ct)
+                return EquivalentUnifiedIdeograph.parseEquivalentCharacters text
+            }
+
+        static member GetCharactersAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
+            let stream = File.OpenRead(path)
+            EquivalentUnifiedIdeograph.GetCharactersAsync(stream, ?encoding = encoding, ?ct = ct)
+
+    module private CJKRadicals =
+        let parseCJKRadicals (text: string) =
             let radicals = Dictionary<int, CJKRadical>()
 
-            for line in File.ReadAllLines(path) do
+            for line in text.ReplaceLineEndings().Split(Environment.NewLine) do
                 let m = Regex.Match(line, @"(\d+'?); (.{4}); (.{4})")
 
                 if m.Success then
@@ -86,13 +100,27 @@ module Unicode =
 
             radicals |> Seq.map (_.Value) |> Seq.toList
 
-    [<RequireQualifiedAccess>]
-    module DerivedName =
+    [<AbstractClass; Sealed>]
+    type CJKRadicals =
+        static member GetCJKRadicals(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
+            task {
+                let encoding = defaultArg encoding Encoding.UTF8
+                let ct = defaultArg ct CancellationToken.None
+                use sr = new StreamReader(stream, encoding)
+                let! text = sr.ReadToEndAsync(ct)
+                return CJKRadicals.parseCJKRadicals text
+            }
+
+        static member GetCJKRadicals(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
+            let stream = File.OpenRead(path)
+            CJKRadicals.GetCJKRadicals(stream, ?encoding = encoding, ?ct = ct)
+
+    module private DerivedName =
         let private replace (pattern: string) (replacement: string) (input: string) =
             Regex.Replace(input, pattern, replacement)
 
-        let getDerivedRadicalNames (path: string) =
-            File.ReadAllLines(path)
+        let parseDerivedRadicalNames (text: string) =
+            text.ReplaceLineEndings().Split(Environment.NewLine)
             |> Array.choose (fun line ->
                 let m = Regex.Match(line, @"^(\w{4,6}) +; (?:CJK|KANGXI) RADICAL (.+)")
 
@@ -108,3 +136,18 @@ module Unicode =
                 else
                     None)
             |> Map.ofArray
+
+    [<AbstractClass; Sealed>]
+    type DerivedName =
+        static member ParseDerivedRadicalNamesAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
+            task {
+                let encoding = defaultArg encoding Encoding.UTF8
+                let ct = defaultArg ct CancellationToken.None
+                use sr = new StreamReader(stream, encoding)
+                let! text = sr.ReadToEndAsync(ct)
+                return DerivedName.parseDerivedRadicalNames text
+            }
+
+        static member ParseDerivedRadicalNamesAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
+            let stream = File.OpenRead(path)
+            DerivedName.ParseDerivedRadicalNamesAsync(stream, ?encoding = encoding, ?ct = ct)

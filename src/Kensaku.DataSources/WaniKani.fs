@@ -5,6 +5,7 @@ open System.IO
 open System.Text.Encodings.Web
 open System.Text.Json
 open System.Text.Json.Serialization
+open System.Threading
 
 type WaniKaniData<'T> = {
     id: int
@@ -143,14 +144,23 @@ type WaniKaniKanji = {
     spaced_repetition_system_id: int
 }
 
-module WaniKani =
-    let private jsonSerializerOptions =
+[<AbstractClass; Sealed>]
+type WaniKani =
+    static let jsonSerializerOptions =
         JsonSerializerOptions(Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
 
-    let getRadicals (path: string) =
-        use stream = File.OpenRead(path)
-        JsonSerializer.Deserialize<WaniKaniData<WaniKaniRadical> list>(stream, jsonSerializerOptions)
+    static member ParseRadicalsAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        JsonSerializer.DeserializeAsync<WaniKaniData<WaniKaniRadical> list>(stream, jsonSerializerOptions, ct)
 
-    let getKanji (path: string) =
-        use stream = File.OpenRead(path)
-        JsonSerializer.Deserialize<WaniKaniData<WaniKaniKanji> list>(stream, jsonSerializerOptions)
+    static member ParseRadicalsAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        WaniKani.ParseRadicalsAsync(stream, ?ct = ct)
+
+    static member ParseKanjiAsync(stream: Stream, ?ct: CancellationToken) =
+        let ct = defaultArg ct CancellationToken.None
+        JsonSerializer.DeserializeAsync<WaniKaniData<WaniKaniKanji> list>(stream, jsonSerializerOptions, ct)
+
+    static member ParseKanjiAsync(path: string, ?ct: CancellationToken) =
+        let stream = File.OpenRead(path)
+        WaniKani.ParseKanjiAsync(stream, ?ct = ct)

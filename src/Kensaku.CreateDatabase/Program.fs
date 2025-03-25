@@ -1,4 +1,5 @@
-﻿open System
+﻿open FSharp.Control
+open System
 open System.IO
 open System.IO.Compression
 open System.Net.Http
@@ -143,52 +144,64 @@ let downloadDataAsync () =
     }
 
 let populateTables (ctx: KensakuConnection) =
-    let equivalentCharacters =
-        Unicode.EquivalentUnifiedIdeograph.getEquivalentCharacters "data/EquivalentUnifiedIdeograph.txt"
+    task {
+        let! equivalentCharacters =
+            Unicode.EquivalentUnifiedIdeograph.GetCharactersAsync("data/EquivalentUnifiedIdeograph.txt")
 
-    equivalentCharacters
-    |> Map.values
-    |> Seq.distinct
-    |> Seq.toList
-    |> Schema.populateEquivalentCharacters ctx
-
-    let getVariants (character: Rune) =
         equivalentCharacters
-        |> Map.tryFind character
-        |> Option.defaultValue (Set.singleton character)
+        |> Map.values
+        |> Seq.distinct
+        |> Seq.toList
+        |> Schema.populateEquivalentCharacters ctx
 
-    Unicode.CJKRadicals.getCJKRadicals "data/CJKRadicals.txt"
-    |> Schema.populateCJKRadicals ctx getVariants
+        let getVariants (character: Rune) =
+            equivalentCharacters
+            |> Map.tryFind character
+            |> Option.defaultValue (Set.singleton character)
 
-    JMdict.getEntries "data/JMdict.xml" |> Schema.populateJMdictEntries ctx
+        let! cjkRadicals = Unicode.CJKRadicals.GetCJKRadicals("data/CJKRadicals.txt")
+        Schema.populateCJKRadicals ctx getVariants cjkRadicals
 
-    JMnedict.getEntries "data/JMnedict.xml" |> Schema.populateJMnedictEntries ctx
+        JMdict.ParseEntriesAsync("data/JMdict.xml")
+        |> TaskSeq.toSeq
+        |> Schema.populateJMdictEntries ctx
 
-    Kanjidic2.getInfo "data/kanjidic2.xml" |> Schema.populateKanjidic2Info ctx
+        JMnedict.ParseEntriesAsync("data/JMnedict.xml")
+        |> TaskSeq.toSeq
+        |> Schema.populateJMnedictEntries ctx
 
-    Kanjidic2.getEntries "data/kanjidic2.xml" |> Schema.populateKanjidic2Entries ctx
+        let! kanjidic2Info = Kanjidic2.ParseInfoAsync("data/kanjidic2.xml")
+        Schema.populateKanjidic2Info ctx kanjidic2Info
 
-    let waniKaniRadicals = WaniKani.getRadicals "data/wani-kani-radicals.json"
-    let waniKaniKanji = WaniKani.getKanji "data/wani-kani-kanji.json"
-    Schema.populateWaniKaniRadicals ctx getVariants waniKaniRadicals waniKaniKanji
+        Kanjidic2.ParseEntriesAsync("data/kanjidic2.xml")
+        |> TaskSeq.toSeq
+        |> Schema.populateKanjidic2Entries ctx
 
-    RadkFile.getEntries "data/radkfile" "data/radkfile2"
-    |> Schema.populateRadicals ctx getVariants
+        let! waniKaniRadicals = WaniKani.ParseRadicalsAsync("data/wani-kani-radicals.json")
+        let! waniKaniKanji = WaniKani.ParseKanjiAsync("data/wani-kani-kanji.json")
+        Schema.populateWaniKaniRadicals ctx getVariants waniKaniRadicals waniKaniKanji
 
-    let derivedRadicalNames =
-        Unicode.DerivedName.getDerivedRadicalNames "data/DerivedName.txt"
+        let encoding = Encoding.GetEncoding("EUC-JP")
+        let! radkEntries = RadkFile.ParseEntriesAsync("data/radkfile", encoding)
+        let! radk2Entries = RadkFile.ParseEntriesAsync("data/radkfile2", encoding)
+        let combinedEntries = RadkFile.CombineEntries(radkEntries, radk2Entries)
+        Schema.populateRadicals ctx getVariants combinedEntries
 
-    Schema.populateDerivedRadicalNames ctx derivedRadicalNames
+        let! derivedRadicalNames = Unicode.DerivedName.ParseDerivedRadicalNamesAsync("data/DerivedName.txt")
+        Schema.populateDerivedRadicalNames ctx derivedRadicalNames
+    }
 
 let createDb () =
-    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-    downloadDataAsync () |> Async.AwaitTask |> Async.RunSynchronously
-    use ctx = new KensakuConnection("Data Source=data/kensaku.db")
-    ctx.Open()
-    Schema.createSchema ctx
-    populateTables ctx
+    task {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+        do! downloadDataAsync ()
+        use ctx = new KensakuConnection("Data Source=data/kensaku.db")
+        do! ctx.OpenAsync()
+        Schema.createSchema ctx
+        do! populateTables ctx
+    }
 
 [<EntryPoint>]
 let main argv =
-    createDb ()
+    createDb () |> Async.AwaitTask |> Async.RunSynchronously
     0
