@@ -24,24 +24,22 @@ type AnkiNote = {
     Back: string
 }
 
-let getPrimaryForm (word: GetWordQueryResult) =
-    let primaryEntryLabel, _ = getPrimaryAndAlternateForms word
-    primaryEntryLabel
+let getPrimaryForm (word: GetWordQueryResult) = (getWordForms word).Primary
 
 
 let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
-    let primaryEntryLabel, alternateForms = getPrimaryAndAlternateForms word
+    let wordForms = getWordForms word
 
     let frontText =
         if needsFurigana then
-            primaryEntryLabel.ToString()
+            wordForms.Primary.ToString()
         else
-            primaryEntryLabel.Kanji |> Option.defaultValue primaryEntryLabel.Reading
+            wordForms.Primary.Kanji |> Option.defaultValue wordForms.Primary.Reading
 
     let front = [ Html.h1 [ prop.className "expression"; prop.text frontText ] ]
 
     let back = [
-        yield Html.h1 [ prop.className "expression"; prop.text (primaryEntryLabel.ToString()) ]
+        yield Html.h1 [ prop.className "expression"; prop.text (wordForms.Primary.ToString()) ]
 
         yield Html.hr []
 
@@ -118,7 +116,7 @@ let printWord (word: GetWordQueryResult) (needsFurigana: bool) =
                     ]
                 ]
 
-        let otherForms = (alternateForms |> List.map _.ToString()) |> String.concat ", "
+        let otherForms = (wordForms.Alternate |> Seq.map _.ToString()) |> String.concat ", "
 
         if otherForms.Length > 0 then
             yield Html.h2 [ prop.text "Other Forms" ]
@@ -178,7 +176,8 @@ let getDbConnection () =
     new KensakuConnection($"Data Source=%s{dbPath}")
 
 let getPreferredEntries (word: string) (entries: GetWordQueryResult seq) =
-    let nonNameEntries = entries |> Seq.where (fun e -> e.Senses.Length > 0) |> Seq.toList
+    let nonNameEntries =
+        entries |> Seq.where (fun e -> e.Senses.Length > 0) |> Seq.toList
 
     nonNameEntries
     |> Seq.where (fun e ->

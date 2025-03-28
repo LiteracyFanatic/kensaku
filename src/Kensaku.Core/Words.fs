@@ -25,11 +25,16 @@ module Words =
             |> Option.map (fun k -> $"%s{k} 【{this.Reading}】")
             |> Option.defaultValue this.Reading
 
+    type WordForms = {
+        Primary: EntryLabel
+        Alternate: EntryLabel seq
+    }
+
     let private getReadings (kanji: KanjiElement) (readings: ReadingElement list) =
         readings
         |> List.filter (fun re -> re.Restrictions.IsEmpty || List.contains kanji.Value re.Restrictions)
 
-    let getPrimaryAndAlternateForms (word: GetWordQueryResult) =
+    let getWordForms (word: GetWordQueryResult) =
         let trueReadings =
             word.ReadingElements
             |> List.filter (fun re ->
@@ -64,7 +69,10 @@ module Words =
                     Reading = re.Value
                 })
 
-        kanjiReadingPairs.Head, (kanjiReadingPairs.Tail @ falseEntries)
+        {
+            Primary = kanjiReadingPairs.Head
+            Alternate = (kanjiReadingPairs.Tail @ falseEntries)
+        }
 
     let private getIdsForWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
         ctx.QueryAsync<int>(

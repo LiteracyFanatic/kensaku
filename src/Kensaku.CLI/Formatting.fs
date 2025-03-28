@@ -246,9 +246,9 @@ module Formatting =
             console.WriteLineNonBreaking($"    JIS X 0213: %s{kanji.CodePoints.Jis213.Value}")
 
     let printWord (console: StringWriterAnsiConsole) (word: GetWordQueryResult) =
-        let primaryEntryLabel, alternateForms = getPrimaryAndAlternateForms word
+        let wordForms = getWordForms word
 
-        console.MarkupLineNonBreaking(primaryEntryLabel.ToString())
+        console.MarkupLineNonBreaking(wordForms.Primary.ToString())
 
         let senses =
             word.Senses
@@ -341,7 +341,7 @@ module Formatting =
                 if i < translations.Length - 1 then
                     console.WriteLine()
 
-        let otherForms = alternateForms |> List.map _.ToString() |> String.concat ", "
+        let otherForms = wordForms.Alternate |> Seq.map _.ToString() |> String.concat ", "
 
         if otherForms.Length > 0 then
             console.WriteLine()
