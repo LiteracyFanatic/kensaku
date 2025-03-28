@@ -1,6 +1,8 @@
 namespace Kensaku.Core
 
 module Words =
+    open System.Threading.Tasks
+
     open Dapper
 
     open Kensaku.Core.Domain
@@ -64,8 +66,8 @@ module Words =
 
         kanjiReadingPairs.Head, (kanjiReadingPairs.Tail @ falseEntries)
 
-    let private getIdsForWordLiterals (word: string) (ctx: KensakuConnection) =
-        ctx.Query<int>(
+    let private getIdsForWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
+        ctx.QueryAsync<int>(
             sql
                 """
             select EntryId
@@ -79,103 +81,113 @@ module Words =
             where re.Value = @Word""",
             {| Word = word |}
         )
-        |> Seq.toList
 
-    let private getKanjiElements (entryId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.KanjiElement>(
-            sql
-                """
-            select ke.*
-            from KanjiElements as ke
-            where ke.EntryId = @EntryId
-            order by ke.Id""",
-            {| EntryId = entryId |}
-        )
-        |> Seq.map (fun ke ->
-            let information =
-                ctx.Query<string>(
+    let private getKanjiElementsAsync (entryId: int) (ctx: KensakuConnection) =
+        task {
+            let! kanjiElements =
+                ctx.QueryAsync<Tables.KanjiElement>(
                     sql
                         """
-                    select kei.Value
-                    from KanjiElementInformation as kei
-                    where kei.KanjiElementId = @KanjiElementId""",
-                    {| KanjiElementId = ke.Id |}
+                select ke.*
+                from KanjiElements as ke
+                where ke.EntryId = @EntryId
+                order by ke.Id""",
+                    {| EntryId = entryId |}
                 )
-                |> Seq.toList
 
-            let priority =
-                ctx.Query<string>(
+            return!
+                kanjiElements
+                |> Seq.map (fun ke ->
+                    task {
+                        let! information =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                            select kei.Value
+                            from KanjiElementInformation as kei
+                            where kei.KanjiElementId = @KanjiElementId""",
+                                {| KanjiElementId = ke.Id |}
+                            )
+
+                        let! priority =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                            select kep.Value
+                            from KanjiElementPriorities as kep
+                            where kep.KanjiElementId = @KanjiElementId""",
+                                {| KanjiElementId = ke.Id |}
+                            )
+
+                        return {
+                            Value = ke.Value
+                            Information = information |> Seq.toList
+                            Priority = priority |> Seq.toList
+                        }
+                    })
+                |> Task.WhenAll
+        }
+
+    let private getReadingElementsAsync (entryId: int) (ctx: KensakuConnection) =
+        task {
+            let! readingElements =
+                ctx.QueryAsync<Tables.ReadingElement>(
                     sql
                         """
-                    select kep.Value
-                    from KanjiElementPriorities as kep
-                    where kep.KanjiElementId = @KanjiElementId""",
-                    {| KanjiElementId = ke.Id |}
+                select re.*
+                from ReadingElements as re
+                where re.EntryId = @EntryId
+                order by re.Id""",
+                    {| EntryId = entryId |}
                 )
-                |> Seq.toList
 
-            {
-                Value = ke.Value
-                Information = information
-                Priority = priority
-            })
-        |> Seq.toList
+            return!
+                readingElements
+                |> Seq.map (fun re ->
+                    task {
+                        let! restrictions =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                            select rer.Value
+                            from ReadingElementRestrictions as rer
+                            where rer.ReadingElementId = @ReadingElementId""",
+                                {| ReadingElementId = re.Id |}
+                            )
 
-    let private getReadingElements (entryId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.ReadingElement>(
-            sql
-                """
-            select re.*
-            from ReadingElements as re
-            where re.EntryId = @EntryId
-            order by re.Id""",
-            {| EntryId = entryId |}
-        )
-        |> Seq.map (fun re ->
-            let restrictions =
-                ctx.Query<string>(
-                    sql
-                        """
-                    select rer.Value
-                    from ReadingElementRestrictions as rer
-                    where rer.ReadingElementId = @ReadingElementId""",
-                    {| ReadingElementId = re.Id |}
-                )
-                |> Seq.toList
+                        let! information =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                            select rei.Value
+                            from ReadingElementInformation as rei
+                            where rei.ReadingElementId = @ReadingElementId""",
+                                {| ReadingElementId = re.Id |}
+                            )
 
-            let information =
-                ctx.Query<string>(
-                    sql
-                        """
-                    select rei.Value
-                    from ReadingElementInformation as rei
-                    where rei.ReadingElementId = @ReadingElementId""",
-                    {| ReadingElementId = re.Id |}
-                )
-                |> Seq.toList
+                        let! priority =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                            select rep.Value
+                            from ReadingElementPriorities as rep
+                            where rep.ReadingElementId = @ReadingElementId""",
+                                {| ReadingElementId = re.Id |}
+                            )
 
-            let priority =
-                ctx.Query<string>(
-                    sql
-                        """
-                    select rep.Value
-                    from ReadingElementPriorities as rep
-                    where rep.ReadingElementId = @ReadingElementId""",
-                    {| ReadingElementId = re.Id |}
-                )
-                |> Seq.toList
+                        return {
+                            Value = re.Value
+                            IsTrueReading = re.IsTrueReading
+                            Restrictions = restrictions |> Seq.toList
+                            Information = information |> Seq.toList
+                            Priority = priority |> Seq.toList
+                        }
+                    })
+                |> Task.WhenAll
+        }
 
-            {
-                Value = re.Value
-                IsTrueReading = re.IsTrueReading
-                Restrictions = restrictions
-                Information = information
-                Priority = priority
-            })
-        |> Seq.toList
-
-    let private getKanjiRestrictions (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getKanjiRestrictionsAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
             select sker.KanjiElement
@@ -183,10 +195,9 @@ module Words =
             where sker.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getReadingRestrictions (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getReadingRestrictionsAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
             select srer.ReadingElement
@@ -194,10 +205,9 @@ module Words =
             where srer.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getPartsOfSpeech (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getPartsOfSpeechAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
             select pos.Value
@@ -205,43 +215,52 @@ module Words =
             where pos.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getCrossReferences (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.SenseCrossReference>(
-            sql
-                """
-            select scr.*
-            from SenseCrossReferences as scr
-            where scr.SenseId = @SenseId""",
-            {| SenseId = senseId |}
-        )
-        |> Seq.map (fun scf -> {
-            Kanji = scf.ReferenceKanjiElement
-            Reading = scf.ReferenceReadingElement
-            Index = scf.ReferenceSense
-        })
-        |> Seq.toList
+    let private getCrossReferencesAsync (senseId: int) (ctx: KensakuConnection) =
+        task {
+            let! crossReferences =
+                ctx.QueryAsync<Tables.SenseCrossReference>(
+                    sql
+                        """
+                select scr.*
+                from SenseCrossReferences as scr
+                where scr.SenseId = @SenseId""",
+                    {| SenseId = senseId |}
+                )
 
-    let private getAntonyms (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.Antonym>(
-            sql
-                """
-            select a.*
-            from Antonyms as a
-            where a.SenseId = @SenseId""",
-            {| SenseId = senseId |}
-        )
-        |> Seq.toList
-        |> List.map (fun a ->
-            ({
-                Kanji = a.ReferenceKanjiElement
-                Reading = a.ReferenceReadingElement
-            }
-            : Antonym))
+            return
+                crossReferences
+                |> Seq.map (fun scf -> {
+                    Kanji = scf.ReferenceKanjiElement
+                    Reading = scf.ReferenceReadingElement
+                    Index = scf.ReferenceSense
+                })
+        }
 
-    let private getFields (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getAntonymsAsync (senseId: int) (ctx: KensakuConnection) =
+        task {
+            let! antonyms =
+                ctx.QueryAsync<Tables.Antonym>(
+                    sql
+                        """
+                select a.*
+                from Antonyms as a
+                where a.SenseId = @SenseId""",
+                    {| SenseId = senseId |}
+                )
+
+            return
+                antonyms
+                |> Seq.map (fun a ->
+                    ({
+                        Kanji = a.ReferenceKanjiElement
+                        Reading = a.ReferenceReadingElement
+                    }
+                    : Antonym))
+        }
+
+    let private getFieldsAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
             select f.Value
@@ -249,173 +268,218 @@ module Words =
             where f.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getMiscellaneousInformation (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getMiscellaneousInformationAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
-            select mi.Value
-            from MiscellaneousInformation as mi
-            where mi.SenseId = @SenseId""",
+                select mi.Value
+                from MiscellaneousInformation as mi
+                where mi.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getAdditionalInformation (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
+    let private getAdditionalInformationAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
             sql
                 """
-            select sai.Value
-            from SenseInformation as sai
-            where sai.SenseId = @SenseId""",
+                select sai.Value
+                from SenseInformation as sai
+                where sai.SenseId = @SenseId""",
             {| SenseId = senseId |}
         )
-        |> Seq.toList
 
-    let private getLanguageSources (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.LanguageSource>(
-            sql
-                """
-            select ls.*
-            from LanguageSources as ls
-            where ls.SenseId = @SenseId""",
-            {| SenseId = senseId |}
-        )
-        |> Seq.map (fun ls -> {
-            Value = ls.Value
-            Code = ls.LanguageCode
-            IsPartial = ls.IsPartial
-            IsWasei = ls.IsWasei
-        })
-        |> Seq.toList
-
-    let private getDialects (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<string>(
-            sql
-                """
-            select d.Value
-            from Dialects as d
-            where d.SenseId = @SenseId""",
-            {| SenseId = senseId |}
-        )
-        |> Seq.toList
-
-    let private getGlosses (senseId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.Gloss>(
-            sql
-                """
-            select g.*
-            from Glosses as g
-            where g.SenseId = @SenseId""",
-            {| SenseId = senseId |}
-        )
-        |> Seq.map (fun g -> {
-            Value = g.Value
-            LanguageCode = g.Language
-            Type = g.Type
-        })
-        |> Seq.toList
-
-    let private getSenses (entryId: int) (ctx: KensakuConnection) : Sense list =
-        ctx.Query<Tables.Sense>(
-            sql
-                """
-            select s.*
-            from Senses as s
-            where s.EntryId = @EntryId""",
-            {| EntryId = entryId |}
-        )
-        |> Seq.map (fun s ->
-            let result: Sense = {
-                KanjiRestrictions = getKanjiRestrictions s.Id ctx
-                ReadingRestrictions = getReadingRestrictions s.Id ctx
-                PartsOfSpeech = getPartsOfSpeech s.Id ctx
-                CrossReferences = getCrossReferences s.Id ctx
-                Antonyms = getAntonyms s.Id ctx
-                Fields = getFields s.Id ctx
-                MiscellaneousInformation = getMiscellaneousInformation s.Id ctx
-                AdditionalInformation = getAdditionalInformation s.Id ctx
-                LanguageSources = getLanguageSources s.Id ctx
-                Dialects = getDialects s.Id ctx
-                Glosses = getGlosses s.Id ctx
-            }
-
-            result)
-        |> Seq.toList
-
-    let private getTranslations (entryId: int) (ctx: KensakuConnection) =
-        ctx.Query<Tables.Translation>(
-            sql
-                """
-            select t.*
-            from Translations as t
-            where t.EntryId = @EntryId""",
-            {| EntryId = entryId |}
-        )
-        |> Seq.map (fun t ->
-            let nameTypes =
-                ctx.Query<string>(
+    let private getLanguageSourcesAsync (senseId: int) (ctx: KensakuConnection) =
+        task {
+            let! languageSources =
+                ctx.QueryAsync<Tables.LanguageSource>(
                     sql
                         """
-                    select nt.Value
-                    from NameTypes as nt
-                    where nt.TranslationId = @TranslationId""",
-                    {| TranslationId = t.Id |}
+                select ls.*
+                from LanguageSources as ls
+                where ls.SenseId = @SenseId""",
+                    {| SenseId = senseId |}
                 )
-                |> Seq.toList
 
-            let crossReferences =
-                ctx.Query<Tables.TranslationCrossReference>(
+            return
+                languageSources
+                |> Seq.map (fun ls -> {
+                    Value = ls.Value
+                    Code = ls.LanguageCode
+                    IsPartial = ls.IsPartial
+                    IsWasei = ls.IsWasei
+                })
+        }
+
+    let private getDialectsAsync (senseId: int) (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(
+            sql
+                """
+                select d.Value
+                from Dialects as d
+                where d.SenseId = @SenseId""",
+            {| SenseId = senseId |}
+        )
+
+    let private getGlossesAsync (senseId: int) (ctx: KensakuConnection) =
+        task {
+            let! glosses =
+                ctx.QueryAsync<Tables.Gloss>(
                     sql
                         """
-                    select tcr.*
-                    from TranslationCrossReferences as tcr
-                    where tcr.TranslationId = @TranslationId""",
-                    {| TranslationId = t.Id |}
+                select g.*
+                from Glosses as g
+                where g.SenseId = @SenseId""",
+                    {| SenseId = senseId |}
                 )
-                |> Seq.map (fun tcr -> {
-                    Kanji = tcr.ReferenceKanjiElement
-                    Reading = tcr.ReferenceReadingElement
-                    Index = tcr.ReferenceTranslation
+
+            return
+                glosses
+                |> Seq.map (fun g -> {
+                    Value = g.Value
+                    LanguageCode = g.Language
+                    Type = g.Type
                 })
                 |> Seq.toList
+        }
 
-            let contents =
-                ctx.Query<Tables.TranslationContent>(
+    let private getSensesAsync (entryId: int) (ctx: KensakuConnection) =
+        task {
+            let! senses =
+                ctx.QueryAsync<Tables.Sense>(
                     sql
                         """
-                    select tc.*
-                    from TranslationContents as tc
-                    where tc.TranslationId = @TranslationId""",
-                    {| TranslationId = t.Id |}
+                select s.*
+                from Senses as s
+                where s.EntryId = @EntryId""",
+                    {| EntryId = entryId |}
                 )
-                |> Seq.map (fun tc ->
-                    {
-                        Value = tc.Value
-                        LanguageCode = tc.Language
-                    }
-                    : TranslationContents)
-                |> Seq.toList
 
-            {
-                NameTypes = nameTypes
-                CrossReferences = crossReferences
-                Contents = contents
-            })
-        |> Seq.toList
+            return!
+                senses
+                |> Seq.map (fun s ->
+                    task {
+                        let! kanjiRestrictions = getKanjiRestrictionsAsync s.Id ctx
+                        let! readingRestrictions = getReadingRestrictionsAsync s.Id ctx
+                        let! partsOfSpeech = getPartsOfSpeechAsync s.Id ctx
+                        let! crossReferences = getCrossReferencesAsync s.Id ctx
+                        let! antonyms = getAntonymsAsync s.Id ctx
+                        let! fields = getFieldsAsync s.Id ctx
+                        let! miscInfo = getMiscellaneousInformationAsync s.Id ctx
+                        let! additionalInfo = getAdditionalInformationAsync s.Id ctx
+                        let! languageSources = getLanguageSourcesAsync s.Id ctx
+                        let! dialects = getDialectsAsync s.Id ctx
+                        let! glosses = getGlossesAsync s.Id ctx
 
-    let private getWordsByIds (ids: int list) (ctx: KensakuConnection) =
-        ids
-        |> List.map (fun id -> {
-            Id = id
-            KanjiElements = getKanjiElements id ctx
-            ReadingElements = getReadingElements id ctx
-            Senses = getSenses id ctx
-            Translations = getTranslations id ctx
-        })
+                        return {
+                            KanjiRestrictions = kanjiRestrictions |> Seq.toList
+                            ReadingRestrictions = readingRestrictions |> Seq.toList
+                            PartsOfSpeech = partsOfSpeech |> Seq.toList
+                            CrossReferences = crossReferences |> Seq.toList
+                            Antonyms = antonyms |> Seq.toList
+                            Fields = fields |> Seq.toList
+                            MiscellaneousInformation = miscInfo |> Seq.toList
+                            AdditionalInformation = additionalInfo |> Seq.toList
+                            LanguageSources = languageSources |> Seq.toList
+                            Dialects = dialects |> Seq.toList
+                            Glosses = glosses
+                        }
+                    })
+                |> Task.WhenAll
+        }
 
-    let getWordLiterals (word: string) (ctx: KensakuConnection) =
-        let ids = getIdsForWordLiterals word ctx
-        let words = getWordsByIds ids ctx
-        words
+    let private getTranslationsAsync (entryId: int) (ctx: KensakuConnection) =
+        task {
+            let! translations =
+                ctx.QueryAsync<Tables.Translation>(
+                    sql
+                        """
+                select t.*
+                from Translations as t
+                where t.EntryId = @EntryId""",
+                    {| EntryId = entryId |}
+                )
+
+            return!
+                translations
+                |> Seq.map (fun t ->
+                    task {
+                        let! nameTypes =
+                            ctx.QueryAsync<string>(
+                                sql
+                                    """
+                        select nt.Value
+                        from NameTypes as nt
+                        where nt.TranslationId = @TranslationId""",
+                                {| TranslationId = t.Id |}
+                            )
+
+                        let! crossReferences =
+                            ctx.QueryAsync<Tables.TranslationCrossReference>(
+                                sql
+                                    """
+                        select tcr.*
+                        from TranslationCrossReferences as tcr
+                        where tcr.TranslationId = @TranslationId""",
+                                {| TranslationId = t.Id |}
+                            )
+
+                        let! contents =
+                            ctx.QueryAsync<Tables.TranslationContent>(
+                                sql
+                                    """
+                        select tc.*
+                        from TranslationContents as tc
+                        where tc.TranslationId = @TranslationId""",
+                                {| TranslationId = t.Id |}
+                            )
+
+                        return {
+                            NameTypes = nameTypes |> Seq.toList
+                            CrossReferences =
+                                crossReferences
+                                |> Seq.map (fun tcr -> {
+                                    Kanji = tcr.ReferenceKanjiElement
+                                    Reading = tcr.ReferenceReadingElement
+                                    Index = tcr.ReferenceTranslation
+                                })
+                                |> Seq.toList
+                            Contents =
+                                contents
+                                |> Seq.map (fun tc -> {
+                                    TranslationContents.Value = tc.Value
+                                    LanguageCode = tc.Language
+                                })
+                                |> Seq.toList
+                        }
+                    })
+                |> Task.WhenAll
+        }
+
+    let private getWordsByIdsAsync (ids: int seq) (ctx: KensakuConnection) =
+        task {
+            return!
+                ids
+                |> Seq.map (fun id ->
+                    task {
+                        let! kanjiElements = getKanjiElementsAsync id ctx
+                        let! readingElements = getReadingElementsAsync id ctx
+                        let! senses = getSensesAsync id ctx
+                        let! translations = getTranslationsAsync id ctx
+
+                        return {
+                            Id = id
+                            KanjiElements = kanjiElements |> Seq.toList
+                            ReadingElements = readingElements |> Seq.toList
+                            Senses = senses |> Seq.toList
+                            Translations = translations |> Seq.toList
+                        }
+                    })
+                |> Task.WhenAll
+        }
+
+    let getWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
+        task {
+            let! ids = getIdsForWordLiteralsAsync word ctx
+            return! getWordsByIdsAsync ids ctx
+        }

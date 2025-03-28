@@ -162,364 +162,395 @@ module Kanji =
         | None -> "true"
 
     // TODO: Implement search by key radical
-    let private getKanjiIds (query: GetKanjiQuery) (ctx: KensakuConnection) =
-        ctx.Execute(sql "create temp table SearchRadicals (Value text not null);")
-        |> ignore
+    let private getKanjiIdsAsync (query: GetKanjiQuery) (ctx: KensakuConnection) =
+        task {
+            let! _ = ctx.ExecuteAsync(sql "create temp table SearchRadicals (Value text not null);")
 
-        for searchRadical in query.SearchRadicals do
-            ctx.Execute(
-                sql "insert into SearchRadicals (Value) values (@SearchRadical);",
-                {| SearchRadical = searchRadical |}
-            )
-            |> ignore
+            for searchRadical in query.SearchRadicals do
+                let! _ =
+                    ctx.ExecuteAsync(
+                        sql "insert into SearchRadicals (Value) values (@SearchRadical);",
+                        {| SearchRadical = searchRadical |}
+                    )
 
-        ctx.Execute(sql "create temp table SearchRadicalMeanings (Value text not null);")
-        |> ignore
+                ()
 
-        for searchRadicalMeaning in query.SearchRadicalMeanings do
-            ctx.Execute(
-                sql "insert into SearchRadicalMeanings (Value) values (@SearchRadicalMeaning);",
-                {| SearchRadicalMeaning = searchRadicalMeaning |}
-            )
-            |> ignore
+            let! _ = ctx.ExecuteAsync(sql "create temp table SearchRadicalMeanings (Value text not null);")
 
-        let radicalIds =
-            ctx.Query<int>(
-                sql
-                    """
-                select rv.RadicalId
-                from RadicalValues as rv
-                join SearchRadicals as sr on rv.Value = sr.Value
+            for searchRadicalMeaning in query.SearchRadicalMeanings do
+                let! _ =
+                    ctx.ExecuteAsync(
+                        sql "insert into SearchRadicalMeanings (Value) values (@SearchRadicalMeaning);",
+                        {| SearchRadicalMeaning = searchRadicalMeaning |}
+                    )
 
-                union
+                ()
 
-                select rm.RadicalId
-                from RadicalMeanings as rm
-                join SearchRadicalMeanings as srm on rm.Value like srm.Value"""
-            )
-            |> Seq.toList
+            let! radicalIds =
+                ctx.QueryAsync<int>(
+                    sql
+                        """
+                    select rv.RadicalId
+                    from RadicalValues as rv
+                    join SearchRadicals as sr on rv.Value = sr.Value
 
-        ctx.Execute(sql "create temp table SearchRadicalIds (Id number not null);")
-        |> ignore
+                    union
 
-        for radicalId in radicalIds do
-            ctx.Execute(sql "insert into SearchRadicalIds (Id) values (@RadicalId);", {| RadicalId = radicalId |})
-            |> ignore
+                    select rm.RadicalId
+                    from RadicalMeanings as rm
+                    join SearchRadicalMeanings as srm on rm.Value like srm.Value"""
+                )
 
-        ctx.Query<int>(
-            sql
-                $"""
-            select x.Id
-            from (
-                select distinct c.*
-                from Characters as c
-                left join CharacterQueryCodes as cqc on cqc.CharacterId = c.Id
-                left join StrokeMiscounts as sm on sm.CharacterId = c.Id
-                left join CharacterReadings as cr on cr.CharacterId = c.Id and cr.Type in ('ja_on', 'ja_kun')
-                left join CharacterMeanings as cm on cm.CharacterId = c.Id and cm.Language = 'en'
-                left join Nanori as n on n.CharacterId = c.Id
-                left join KeyRadicals as kr on kr.CharacterId = c.Id
-                where true
-                and (@MinStrokeCount is null or c.StrokeCount >= @MinStrokeCount or (@IncludeStrokeMiscounts and sm.Value >= @MinStrokeCount))
-                and (@MaxStrokeCount is null or c.StrokeCount <= @MaxStrokeCount or (@IncludeStrokeMiscounts and sm.Value <= @MaxStrokeCount))
-                and %s{makeCharacterCodeCondition query.CharacterCode}
-                and (@CharacterReading is null or cr.Value = @CharacterReading)
-                and (@CharacterMeaning is null or cm.Value regexp @CharacterMeaning)
-                and (@Nanori is null or n.Value = @Nanori)
-                and (not @CommonOnly or c.Frequency is not null)
-                and %s{makePatternCondition query.Pattern}
-            ) as x
-            where not exists (
-                select sri.Id
-                from SearchRadicalIds as sri
+            let! _ = ctx.ExecuteAsync(sql "create temp table SearchRadicalIds (Id number not null);")
 
-                except
+            for radicalId in radicalIds do
+                let! _ =
+                    ctx.ExecuteAsync(
+                        sql "insert into SearchRadicalIds (Id) values (@RadicalId);",
+                        {| RadicalId = radicalId |}
+                    )
 
-                select c_r.RadicalId
-                from Characters_Radicals as c_r
-                where c_r.CharacterId = x.Id
-            )
-            order by x.Frequency, x.Value;""",
-            param = GetKanjiQueryParams.FromQuery(query)
-        )
-        |> Seq.toList
+                ()
 
-    let private getIdsForKanjiLiterals (kanji: Rune list) (ctx: KensakuConnection) =
-        ctx.Query<int>(sql "select Id from Characters where Value in @Kanji", {| Kanji = List.map string kanji |})
-        |> Seq.toList
+            return!
+                ctx.QueryAsync<int>(
+                    sql
+                        $"""
+                select x.Id
+                from (
+                    select distinct c.*
+                    from Characters as c
+                    left join CharacterQueryCodes as cqc on cqc.CharacterId = c.Id
+                    left join StrokeMiscounts as sm on sm.CharacterId = c.Id
+                    left join CharacterReadings as cr on cr.CharacterId = c.Id and cr.Type in ('ja_on', 'ja_kun')
+                    left join CharacterMeanings as cm on cm.CharacterId = c.Id and cm.Language = 'en'
+                    left join Nanori as n on n.CharacterId = c.Id
+                    left join KeyRadicals as kr on kr.CharacterId = c.Id
+                    where true
+                    and (@MinStrokeCount is null or c.StrokeCount >= @MinStrokeCount or (@IncludeStrokeMiscounts and sm.Value >= @MinStrokeCount))
+                    and (@MaxStrokeCount is null or c.StrokeCount <= @MaxStrokeCount or (@IncludeStrokeMiscounts and sm.Value <= @MaxStrokeCount))
+                    and %s{makeCharacterCodeCondition query.CharacterCode}
+                    and (@CharacterReading is null or cr.Value = @CharacterReading)
+                    and (@CharacterMeaning is null or cm.Value regexp @CharacterMeaning)
+                    and (@Nanori is null or n.Value = @Nanori)
+                    and (not @CommonOnly or c.Frequency is not null)
+                    and %s{makePatternCondition query.Pattern}
+                ) as x
+                where not exists (
+                    select sri.Id
+                    from SearchRadicalIds as sri
 
-    let private getKanjiByIds (ids: int list) (ctx: KensakuConnection) =
-        let param = {| Ids = ids |}
+                    except
 
-        let characters =
-            ctx.Query<Tables.Character>(sql "select * from Characters where Id in @Ids", param)
-            |> Seq.toList
-            |> List.map (fun x -> x.Id, x)
-            |> Map.ofList
+                    select c_r.RadicalId
+                    from Characters_Radicals as c_r
+                    where c_r.CharacterId = x.Id
+                )
+                order by x.Frequency, x.Value;""",
+                    param = GetKanjiQueryParams.FromQuery(query)
+                )
+        }
 
-        let characterQueryCodes =
-            ctx.Query<Tables.CharacterQueryCode>(
-                sql "select * from CharacterQueryCodes where CharacterId in @Ids",
-                param
-            )
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+    let private getIdsForKanjiLiteralsAsync (kanji: Rune list) (ctx: KensakuConnection) =
+        ctx.QueryAsync<int>(sql "select Id from Characters where Value in @Kanji", {| Kanji = List.map string kanji |})
 
-        let strokeMiscounts =
-            ctx.Query<Tables.StrokeMiscount>(sql "select * from StrokeMiscounts where CharacterId in @Ids", param)
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+    let private getKanjiByIdsAsync (ids: int seq) (ctx: KensakuConnection) =
+        task {
+            let param = {| Ids = ids |}
 
-        let characterReadings =
-            ctx.Query<Tables.CharacterReading>(sql "select * from CharacterReadings where CharacterId in @Ids", param)
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+            let! characters = ctx.QueryAsync<Tables.Character>(sql "select * from Characters where Id in @Ids", param)
+            let charactersById = characters |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
-        let nanori =
-            ctx.Query<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+            let! characterQueryCodes =
+                ctx.QueryAsync<Tables.CharacterQueryCode>(
+                    sql "select * from CharacterQueryCodes where CharacterId in @Ids",
+                    param
+                )
 
-        let radicals = ctx.Query<Tables.Radical>(sql "select * from Radicals") |> Seq.toList
+            let characterQueryCodesByCharacterId =
+                characterQueryCodes |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-        let radicalValues =
-            ctx.Query<Tables.RadicalValue>(sql "select * from RadicalValues")
-            |> Seq.toList
-            |> List.groupBy _.RadicalId
-            |> Map.ofList
+            let! strokeMiscounts =
+                ctx.QueryAsync<Tables.StrokeMiscount>(
+                    sql "select * from StrokeMiscounts where CharacterId in @Ids",
+                    param
+                )
 
-        let radicalMeanings =
-            ctx.Query<Tables.RadicalMeaning>(sql "select * from RadicalMeanings")
-            |> Seq.toList
-            |> List.groupBy _.RadicalId
-            |> Map.ofList
+            let strokeMiscountsByCharacterId =
+                strokeMiscounts |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-        let keyRadicals =
-            ctx.Query<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
-            |> Map.map (fun key v ->
-                v
-                |> List.map (fun kr ->
-                    let r = radicals |> List.find (fun x -> x.Number = Some kr.Value)
+            let! characterReadings =
+                ctx.QueryAsync<Tables.CharacterReading>(
+                    sql "select * from CharacterReadings where CharacterId in @Ids",
+                    param
+                )
 
-                    let values =
-                        radicalValues |> Map.tryFind r.Id |> Option.defaultValue [] |> List.map _.Value
+            let characterReadingsByCharacterId =
+                characterReadings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-                    let meanings =
-                        radicalMeanings
-                        |> Map.tryFind r.Id
-                        |> Option.defaultValue []
-                        |> List.map _.Value
+            let! nanori = ctx.QueryAsync<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
+            let nanoriByCharacterId = nanori |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! radicals = ctx.QueryAsync<Tables.Radical>(sql "select * from Radicals")
+
+            let! radicalValues = ctx.QueryAsync<Tables.RadicalValue>(sql "select * from RadicalValues")
+            let radicalValuesByRadicalId = radicalValues |> Seq.groupBy _.RadicalId |> Map.ofSeq
+
+            let! radicalMeanings = ctx.QueryAsync<Tables.RadicalMeaning>(sql "select * from RadicalMeanings")
+
+            let radicalMeaningsByRadicalId =
+                radicalMeanings |> Seq.groupBy _.RadicalId |> Map.ofSeq
+
+            let! keyRadicals =
+                ctx.QueryAsync<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
+
+            let keyRadicalsByCharacterId =
+                keyRadicals
+                |> Seq.groupBy _.CharacterId
+                |> Map.ofSeq
+                |> Map.map (fun key v ->
+                    v
+                    |> Seq.map (fun kr ->
+                        let r = radicals |> Seq.find (fun x -> x.Number = Some kr.Value)
+
+                        let values =
+                            radicalValuesByRadicalId
+                            |> Map.tryFind r.Id
+                            |> Option.defaultValue []
+                            |> Seq.map _.Value
+                            |> Seq.toList
+
+                        let meanings =
+                            radicalMeaningsByRadicalId
+                            |> Map.tryFind r.Id
+                            |> Option.defaultValue []
+                            |> Seq.map _.Value
+                            |> Seq.toList
+
+                        {
+                            Number = kr.Value
+                            Values = values
+                            Meanings = meanings
+                            Type = kr.Type
+                        }))
+
+            let! characterMeanings =
+                ctx.QueryAsync<Tables.CharacterMeaning>(
+                    sql "select * from CharacterMeanings where CharacterId in @Ids and Language = 'en'",
+                    param
+                )
+
+            let characterMeaningsByCharacterId =
+                characterMeanings |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! characterDictionaryReferences =
+                ctx.QueryAsync<Tables.CharacterDictionaryReference>(
+                    sql "select * from CharacterDictionaryReferences where CharacterId in @Ids",
+                    param
+                )
+
+            let characterDictionaryReferencesByCharacterId =
+                characterDictionaryReferences |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! characterVariants =
+                ctx.QueryAsync<CharacterVariant>(
+                    sql
+                        "
+                    select cv.*, c.Value as Character
+                    from CharacterVariants as cv
+                    left join CodePoints as cp on cp.Type = cv.Type and cp.Value = cv.Value
+                    left join Characters as c on c.Id = cp.CharacterId
+                    where cv.CharacterId in @Ids",
+                    param
+                )
+
+            let characterVariantsByCharacterId =
+                characterVariants |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! codepoints =
+                ctx.QueryAsync<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
+
+            let codepointsByCharacterId = codepoints |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! radicals =
+                ctx.QueryAsync<
+                    {|
+                        CharacterId: int
+                        Value: Rune
+                    |}
+                 >(
+                    sql
+                        "
+                    select c_r.CharacterId, rv.Value from
+                    Characters_Radicals as c_r
+                    join Radicals as r on r.Id = c_r.RadicalId
+                    join RadicalValues as rv on rv.RadicalId = r.Id
+                    where c_r.CharacterId in @Ids",
+                    param
+                )
+
+            let radicalsByCharacterId = radicals |> Seq.groupBy _.CharacterId |> Map.ofSeq
+
+            let! equivalentCharacters = ctx.QueryAsync<string>(sql "select Characters from EquivalentCharacters")
+
+            let equivalentCharacters =
+                equivalentCharacters |> Seq.toList |> List.map (String.getRunes >> set)
+
+            let getCharacterGroup (character: Rune) =
+                equivalentCharacters
+                |> List.tryFind (Set.contains character)
+                |> Option.defaultValue (Set.singleton character)
+
+            return
+                ids
+                |> Seq.map (fun id ->
+                    let character = charactersById[id]
 
                     {
-                        Number = kr.Value
-                        Values = values
-                        Meanings = meanings
-                        Type = kr.Type
-                    }))
+                        Value = character.Value
+                        Grade = character.Grade
+                        StrokeCount = character.StrokeCount
+                        StrokeMiscounts =
+                            strokeMiscountsByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.map (_.Value)
+                            |> Seq.toList
+                        CharacterReadings = {|
+                            Kunyomi =
+                                characterReadingsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.filter (fun x -> x.Type = "ja_kun")
+                                |> Seq.map (_.Value)
+                                |> Seq.toList
+                            Onyomi =
+                                characterReadingsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.filter (fun x -> x.Type = "ja_on")
+                                |> Seq.map (_.Value)
+                                |> Seq.toList
+                        |}
+                        CharacterMeanings =
+                            characterMeaningsByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.map (_.Value)
+                            |> Seq.toList
+                        CharacterCodes = {|
+                            Skip =
+                                characterQueryCodesByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "skip")
+                                |> Option.map (_.Value)
+                            SkipMisclassifications =
+                                characterQueryCodesByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.filter _.SkipMisclassification.IsSome
+                                |> Seq.map (fun x ->
+                                    SkipMisclassification.Create(x.SkipMisclassification.Value, x.Value))
+                                |> Seq.toList
+                            ShDesc =
+                                characterQueryCodesByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "sh_desc")
+                                |> Option.map (_.Value)
+                            FourCorner =
+                                characterQueryCodesByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "four_corner")
+                                |> Option.map (_.Value)
+                            DeRoo =
+                                characterQueryCodesByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "deroo")
+                                |> Option.map (_.Value)
+                        |}
+                        Nanori =
+                            nanoriByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.map (_.Value)
+                            |> Seq.toList
+                        KeyRadicals = {|
+                            Kangxi =
+                                keyRadicalsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.find (fun x -> x.Type = "classical")
+                            Nelson =
+                                keyRadicalsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "nelson_c")
+                        |}
+                        DictionaryReferences =
+                            characterDictionaryReferencesByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.toList
+                        Variants =
+                            characterVariantsByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.toList
+                        CodePoints = {|
+                            Ucs =
+                                codepointsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.find (fun x -> x.Type = "ucs")
+                                |> (_.Value)
+                            Jis208 =
+                                codepointsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "jis208")
+                                |> Option.map (_.Value)
+                            Jis212 =
+                                codepointsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "jis212")
+                                |> Option.map (_.Value)
+                            Jis213 =
+                                codepointsByCharacterId
+                                |> Map.tryFind id
+                                |> Option.defaultValue []
+                                |> Seq.tryFind (fun x -> x.Type = "jis213")
+                                |> Option.map (_.Value)
+                        |}
+                        Radicals =
+                            radicalsByCharacterId
+                            |> Map.tryFind id
+                            |> Option.defaultValue []
+                            |> Seq.map (_.Value)
+                            |> Seq.groupBy getCharacterGroup
+                            |> Seq.map (snd >> Seq.sortDescending >> Seq.head)
+                            |> Seq.toList
+                        Frequency = character.Frequency
+                        IsRadical = character.IsRadical
+                        OldJlptLevel = character.OldJlptLevel
+                    })
+        }
 
-        let characterMeanings =
-            ctx.Query<Tables.CharacterMeaning>(
-                sql "select * from CharacterMeanings where CharacterId in @Ids and Language = 'en'",
-                param
-            )
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+    let getKanjiAsync (query: GetKanjiQuery) (ctx: KensakuConnection) =
+        task {
+            let! ids = getKanjiIdsAsync query ctx
+            return! getKanjiByIdsAsync ids ctx
+        }
 
-        let characterDictionaryReferences =
-            ctx.Query<Tables.CharacterDictionaryReference>(
-                sql "select * from CharacterDictionaryReferences where CharacterId in @Ids",
-                param
-            )
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
+    let getKanjiLiteralsAsync (kanji: Rune list) (ctx: KensakuConnection) =
+        task {
+            let! ids = getIdsForKanjiLiteralsAsync kanji ctx
+            return! getKanjiByIdsAsync ids ctx
+        }
 
-        let characterVariants =
-            ctx.Query<CharacterVariant>(
-                sql
-                    "
-                select cv.*, c.Value as Character
-                from CharacterVariants as cv
-                left join CodePoints as cp on cp.Type = cv.Type and cp.Value = cv.Value
-                left join Characters as c on c.Id = cp.CharacterId
-                where cv.CharacterId in @Ids",
-                param
-            )
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
-
-        let codepoints =
-            ctx.Query<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
-
-        let radicals =
-            ctx.Query<
-                {|
-                    CharacterId: int
-                    Value: Rune
-                |}
-             >(
-                sql
-                    "
-                select c_r.CharacterId, rv.Value from
-                Characters_Radicals as c_r
-                join Radicals as r on r.Id = c_r.RadicalId
-                join RadicalValues as rv on rv.RadicalId = r.Id
-                where c_r.CharacterId in @Ids",
-                param
-            )
-            |> Seq.toList
-            |> List.groupBy _.CharacterId
-            |> Map.ofList
-
-        let equivalentCharacters =
-            ctx.Query<string>(sql "select Characters from EquivalentCharacters")
-            |> Seq.toList
-            |> List.map (String.getRunes >> set)
-
-        let getCharacterGroup (character: Rune) =
-            equivalentCharacters
-            |> List.tryFind (Set.contains character)
-            |> Option.defaultValue (Set.singleton character)
-
-        ids
-        |> List.map (fun id ->
-            let character = characters[id]
-
-            {
-                Value = character.Value
-                Grade = character.Grade
-                StrokeCount = character.StrokeCount
-                StrokeMiscounts =
-                    strokeMiscounts
-                    |> Map.tryFind id
-                    |> Option.defaultValue []
-                    |> List.map (_.Value)
-                CharacterReadings = {|
-                    Kunyomi =
-                        characterReadings
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.filter (fun x -> x.Type = "ja_kun")
-                        |> List.map (_.Value)
-                    Onyomi =
-                        characterReadings
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.filter (fun x -> x.Type = "ja_on")
-                        |> List.map (_.Value)
-                |}
-                CharacterMeanings =
-                    characterMeanings
-                    |> Map.tryFind id
-                    |> Option.defaultValue []
-                    |> List.map (_.Value)
-                CharacterCodes = {|
-                    Skip =
-                        characterQueryCodes
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "skip")
-                        |> Option.map (_.Value)
-                    SkipMisclassifications =
-                        characterQueryCodes
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.filter _.SkipMisclassification.IsSome
-                        |> List.map (fun x -> SkipMisclassification.Create(x.SkipMisclassification.Value, x.Value))
-                    ShDesc =
-                        characterQueryCodes
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "sh_desc")
-                        |> Option.map (_.Value)
-                    FourCorner =
-                        characterQueryCodes
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "four_corner")
-                        |> Option.map (_.Value)
-                    DeRoo =
-                        characterQueryCodes
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "deroo")
-                        |> Option.map (_.Value)
-                |}
-                Nanori = nanori |> Map.tryFind id |> Option.defaultValue [] |> List.map (_.Value)
-                KeyRadicals = {|
-                    Kangxi =
-                        keyRadicals
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.find (fun x -> x.Type = "classical")
-                    Nelson =
-                        keyRadicals
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "nelson_c")
-                |}
-                DictionaryReferences = characterDictionaryReferences |> Map.tryFind id |> Option.defaultValue []
-                Variants = characterVariants |> Map.tryFind id |> Option.defaultValue []
-                CodePoints = {|
-                    Ucs =
-                        codepoints
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.find (fun x -> x.Type = "ucs")
-                        |> (_.Value)
-                    Jis208 =
-                        codepoints
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "jis208")
-                        |> Option.map (_.Value)
-                    Jis212 =
-                        codepoints
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "jis212")
-                        |> Option.map (_.Value)
-                    Jis213 =
-                        codepoints
-                        |> Map.tryFind id
-                        |> Option.defaultValue []
-                        |> List.tryFind (fun x -> x.Type = "jis213")
-                        |> Option.map (_.Value)
-                |}
-                Radicals =
-                    radicals
-                    |> Map.tryFind id
-                    |> Option.defaultValue []
-                    |> List.map (_.Value)
-                    |> List.groupBy getCharacterGroup
-                    |> List.map (snd >> List.sortDescending >> List.head)
-                Frequency = character.Frequency
-                IsRadical = character.IsRadical
-                OldJlptLevel = character.OldJlptLevel
-            })
-
-    let getKanji (query: GetKanjiQuery) (ctx: KensakuConnection) =
-        let ids = getKanjiIds query ctx
-        let kanji = getKanjiByIds ids ctx
-        kanji
-
-    let getKanjiLiterals (kanji: Rune list) (ctx: KensakuConnection) =
-        let ids = getIdsForKanjiLiterals kanji ctx
-        let kanji = getKanjiByIds ids ctx
-        kanji
-
-    let getRadicalNames (ctx: KensakuConnection) =
-        ctx.Query<string>(sql "select rm.Value from RadicalMeanings as rm")
-        |> Seq.toList
+    let getRadicalNamesAsync (ctx: KensakuConnection) =
+        ctx.QueryAsync<string>(sql "select rm.Value from RadicalMeanings as rm")

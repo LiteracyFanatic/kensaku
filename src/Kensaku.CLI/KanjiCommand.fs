@@ -194,7 +194,11 @@ module KanjiCommand =
             match args.TryGetResult(Kanji) with
             | Some kanji ->
                 let runes = kanji |> List.collect String.getRunes
-                getKanjiLiterals runes ctx
+
+                getKanjiLiteralsAsync runes ctx
+                |> Async.AwaitTask
+                |> Async.RunSynchronously
+                |> Seq.toList
             | None ->
                 let minStrokeCount, maxStrokeCount =
                     match args.TryGetResult Strokes with
@@ -206,12 +210,13 @@ module KanjiCommand =
                     |> Option.defaultValue []
                     |> List.partition (String.forall Char.isJapanese)
 
-                let radicalNames = getRadicalNames ctx
+                let radicalNames =
+                    getRadicalNamesAsync ctx |> Async.AwaitTask |> Async.RunSynchronously
 
                 for searchRadicalMeaning in searchRadicalMeanings do
                     let recognizedName =
                         radicalNames
-                        |> List.exists _.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase)
+                        |> Seq.exists _.Equals(searchRadicalMeaning, StringComparison.OrdinalIgnoreCase)
 
                     if not recognizedName then
                         args.Raise($"Could not find a radical named \"%s{searchRadicalMeaning}\"")
@@ -236,7 +241,10 @@ module KanjiCommand =
                     KeyRadical = None
                 }
 
-                getKanji query ctx
+                getKanjiAsync query ctx
+                |> Async.AwaitTask
+                |> Async.RunSynchronously
+                |> Seq.toList
 
         match kanji with
         | [] -> ()

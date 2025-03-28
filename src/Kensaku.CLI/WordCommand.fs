@@ -53,7 +53,11 @@ module WordCommand =
 
         let words =
             match args.TryGetResult(Word) with
-            | Some words -> getWordLiterals words ctx
+            | Some words ->
+                getWordLiteralsAsync words ctx
+                |> Async.AwaitTask
+                |> Async.RunSynchronously
+                |> Seq.toList
             | None -> raise (NotImplementedException())
 
         match words with

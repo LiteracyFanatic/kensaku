@@ -177,13 +177,14 @@ let getDbConnection () =
 
     new KensakuConnection($"Data Source=%s{dbPath}")
 
-let getPreferredEntries (word: string) (entries: GetWordQueryResult list) =
-    let nonNameEntries = entries |> List.where (fun e -> e.Senses.Length > 0)
+let getPreferredEntries (word: string) (entries: GetWordQueryResult seq) =
+    let nonNameEntries = entries |> Seq.where (fun e -> e.Senses.Length > 0) |> Seq.toList
 
     nonNameEntries
-    |> List.where (fun e ->
-        let primaryEntryLabel, _ = getPrimaryAndAlternateForms e
-        primaryEntryLabel.Kanji = Some word)
+    |> Seq.where (fun e ->
+        let wordForms = getWordForms e
+        wordForms.Primary.Kanji = Some word)
+    |> Seq.toList
     |> List.tryNotEmpty
     |> Option.defaultValue nonNameEntries
 
@@ -195,7 +196,9 @@ let processFile (fileName: string) =
     let notes =
         words
         |> Seq.choose (fun word ->
-            getWordLiterals word ctx
+            getWordLiteralsAsync word ctx
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
             |> getPreferredEntries word
             |> List.tryNotEmpty
             |> Option.map (fun w -> word, w))
