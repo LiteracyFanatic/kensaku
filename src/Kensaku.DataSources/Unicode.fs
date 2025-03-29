@@ -17,15 +17,8 @@ type CJKRadical = {
 module Unicode =
     open System
     open System.Collections.Generic
-    open System.Globalization
     open System.IO
     open System.Text.RegularExpressions
-
-    let private hexStringToInt (hexString: string) =
-        Int32.Parse(hexString, NumberStyles.HexNumber)
-
-    let private hexStringToRune (hexString: string) =
-        Rune(Int32.Parse(hexString, NumberStyles.HexNumber))
 
     module private EquivalentUnifiedIdeograph =
         let parseEquivalentCharacters (text: string) =

@@ -8,6 +8,7 @@
     <Compile Include="Kanjidic2.fs" />
     <Compile Include="JMdict.fs" />
     <Compile Include="JMnedict.fs" />
+    <Compile Include="KRadFile.fs" />
     <Compile Include="RadkFile.fs" />
     <Compile Include="Unicode.fs" />
     <Compile Include="WaniKani.fs" />

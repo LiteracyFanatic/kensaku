@@ -3,6 +3,8 @@ namespace Kensaku.DataSources
 [<AutoOpen>]
 module private Utilities =
     open FSharp.Control
+    open System
+    open System.Globalization
     open System.IO
     open System.Text
     open System.Threading
@@ -19,6 +21,12 @@ module private Utilities =
     let isKana (c: char) = isHiragana c || isKatakana c
 
     let inline rune input = Rune.GetRuneAt(string input, 0)
+
+    let hexStringToInt (hexString: string) =
+        Int32.Parse(hexString, NumberStyles.HexNumber)
+
+    let hexStringToRune (hexString: string) =
+        Rune(Int32.Parse(hexString, NumberStyles.HexNumber))
 
     let streamXmlElementsAsync (elementName: string) (stream: Stream) (closeStream: bool) (ct: CancellationToken) =
         taskSeq {

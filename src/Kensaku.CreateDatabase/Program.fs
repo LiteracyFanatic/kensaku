@@ -182,8 +182,9 @@ let populateTables (ctx: KensakuConnection) =
         Schema.populateWaniKaniRadicals ctx getVariants waniKaniRadicals waniKaniKanji
 
         let encoding = Encoding.GetEncoding("EUC-JP")
-        let! radkEntries = RadkFile.ParseEntriesAsync("data/radkfile", encoding)
-        let! radk2Entries = RadkFile.ParseEntriesAsync("data/radkfile2", encoding)
+        let! replacements = KradFile.ParseReplacementsAsync("data/kradfile", encoding)
+        let! radkEntries = RadkFile.ParseEntriesAsync(replacements, "data/radkfile", encoding)
+        let! radk2Entries = RadkFile.ParseEntriesAsync(replacements, "data/radkfile2", encoding)
         let combinedEntries = RadkFile.CombineEntries(radkEntries, radk2Entries)
         Schema.populateRadicals ctx getVariants combinedEntries
 

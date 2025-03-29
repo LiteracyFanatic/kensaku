@@ -4,7 +4,7 @@ open System.IO
 open System.Text
 open System.Threading
 
-module private KRadFile =
+module private KradFile =
     open System.Text.RegularExpressions
 
     let parseReplacements (text: string) =
@@ -13,16 +13,16 @@ module private KRadFile =
         |> Map.ofSeq
 
 [<AbstractClass; Sealed>]
-type KRadFile =
+type KradFile =
     static member ParseReplacementsAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
         task {
             let encoding = defaultArg encoding Encoding.UTF8
             let ct = defaultArg ct CancellationToken.None
             use sr = new StreamReader(stream, encoding)
             let! text = sr.ReadToEndAsync(ct)
-            return KRadFile.parseReplacements text |> Map.toSeq |> dict
+            return KradFile.parseReplacements text |> Map.toSeq |> dict
         }
 
     static member ParseReplacementsAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
         let stream = File.OpenRead(path)
-        KRadFile.ParseReplacementsAsync(stream, ?encoding = encoding, ?ct = ct)
+        KradFile.ParseReplacementsAsync(stream, ?encoding = encoding, ?ct = ct)

@@ -1,5 +1,6 @@
 namespace Kensaku.DataSources
 
+open System.Collections.Generic
 open System.IO
 open System.Text
 open System.Threading
@@ -12,31 +13,6 @@ type RadkEntry = {
 
 module RadkFile =
     open System.Text.RegularExpressions
-
-    let private replacements =
-        Map [
-            '化', '\u2E85'
-            '个', '\u2F09'
-            '并', '\u4E37'
-            '刈', '\u2E89'
-            '込', '\u2ECC'
-            '尚', '\u2E8C'
-            '忙', '\u2E96'
-            '扎', '\u2E97'
-            '汁', '\u2EA1'
-            '犯', '\u2EA8'
-            '艾', '\u2EBE'
-            '邦', '\u2ECF'
-            '阡', '\u2ED9'
-            '老', '\u2EB9'
-            '杰', '\u2EA3'
-            '礼', '\u2EAD'
-            '疔', '\u2F67'
-            '禹', '\u2F71'
-            '初', '\u2EC2'
-            '買', '\u2EB2'
-            '滴', '\u5547'
-        ]
 
     let private charToRadicalNumber =
         Map [
@@ -106,14 +82,14 @@ module RadkFile =
         | None -> None
         | n -> n
 
-    let internal parseEntries (text: string) =
+    let internal parseEntries (replacements: Map<Rune, Rune>) (text: string) =
         Regex.Matches(text, @"^\$ (.) (\d+).*$([^$]+)", RegexOptions.Multiline)
         |> Seq.toList
         |> List.map (fun m ->
-            let radical = char (m.Groups[1].Value)
+            let radical = rune m.Groups[1].Value
 
             {
-                Radical = radical |> replacements.TryFind |> Option.defaultValue radical |> rune
+                Radical = radical |> replacements.TryFind |> Option.defaultValue radical
                 StrokeCount = int m.Groups[2].Value
                 // Remove newlines and katakana middle dots
                 Kanji = set (m.Groups[3].Value.EnumerateRunes()) - set [ rune '\n'; rune '\u30FB' ]
@@ -129,18 +105,23 @@ module RadkFile =
 
 [<AbstractClass; Sealed>]
 type RadkFile =
-    static member ParseEntriesAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
+    static member ParseEntriesAsync
+        (replacements: IDictionary<Rune, Rune>, stream: Stream, ?encoding: Encoding, ?ct: CancellationToken)
+        =
         task {
             let encoding = defaultArg encoding Encoding.UTF8
             let ct = defaultArg ct CancellationToken.None
             use sr = new StreamReader(stream, encoding)
             let! text = sr.ReadToEndAsync(ct)
-            return RadkFile.parseEntries text
+            let replacements = replacements |> Seq.map (|KeyValue|) |> Map.ofSeq
+            return RadkFile.parseEntries replacements text
         }
 
-    static member ParseEntriesAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
+    static member ParseEntriesAsync
+        (replacements: IDictionary<Rune, Rune>, path: string, ?encoding: Encoding, ?ct: CancellationToken)
+        =
         let stream = File.OpenRead(path)
-        RadkFile.ParseEntriesAsync(stream, ?encoding = encoding, ?ct = ct)
+        RadkFile.ParseEntriesAsync(replacements, stream, ?encoding = encoding, ?ct = ct)
 
     static member CombineEntries(radkFileEntries: RadkEntry list, radkFile2Entries: RadkEntry list) =
         RadkFile.combineEntries radkFileEntries radkFile2Entries
