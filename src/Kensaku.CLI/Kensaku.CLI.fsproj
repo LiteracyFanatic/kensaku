@@ -10,6 +10,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Utilities.fs" />
     <Compile Include="RuneJsonConverter.fs" />
     <Compile Include="StringWriterAnsiConsole.fs" />
     <Compile Include="Formatting.fs" />
