@@ -4,14 +4,14 @@ open System.Text
 open System.Threading
 
 type CJKRadicalValue = {
-    RadicalCharacter: Rune
+    RadicalCharacter: Rune option
     UnifiedIdeographCharacter: Rune
 }
 
 type CJKRadical = {
     RadicalNumber: int
     Standard: CJKRadicalValue
-    Simplified: CJKRadicalValue option
+    Simplified: CJKRadicalValue list
 }
 
 module Unicode =
@@ -72,24 +72,35 @@ module Unicode =
             let radicals = Dictionary<int, CJKRadical>()
 
             for line in text.ReplaceLineEndings().Split(Environment.NewLine) do
-                let m = Regex.Match(line, @"(\d+'?); (.{4}); (.{4})")
+                let m = Regex.Match(line, @"(\d+'{0,3}); (.{4})?; (.{4})")
 
                 if m.Success then
                     let n = int (m.Groups[1].Value.Replace("'", ""))
 
                     let radicalValue = {
-                        RadicalCharacter = hexStringToRune (m.Groups[2].Value)
+                        RadicalCharacter =
+                            if m.Groups[2].Success then
+                                m.Groups[2].Value |> hexStringToRune |> Some
+                            else
+                                None
                         UnifiedIdeographCharacter = hexStringToRune (m.Groups[3].Value)
                     }
 
-                    if m.Groups[1].Value.EndsWith("'") then
-                        radicals[n] <- { radicals[n] with Simplified = Some radicalValue }
-                    else
+                    let numberOfApostrophes =
+                        m.Groups[1].Value |> Seq.filter ((=) '\'') |> Seq.length
+
+                    // 1 apostrophe indicates a Chinese simplified form. 2 or 3 apostrophes indicates a non-Chinese simplified form.
+                    match numberOfApostrophes with
+                    | 0 ->
                         radicals[n] <- {
                             RadicalNumber = n
                             Standard = radicalValue
-                            Simplified = None
+                            Simplified = []
                         }
+                    | 1 -> ()
+                    | 2
+                    | 3 -> radicals[n] <- { radicals[n] with Simplified = radicals[n].Simplified @ [ radicalValue ] }
+                    | _ -> failwithf "Unexpected number of apostrophes in radical number %d: %d" n numberOfApostrophes
 
             radicals |> Seq.map (_.Value) |> Seq.toList
 

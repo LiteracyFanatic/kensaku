@@ -722,13 +722,14 @@ module Schema =
 
             let radicalValues =
                 [
-                    radical.Standard.RadicalCharacter
+                    if radical.Standard.RadicalCharacter.IsSome then
+                        radical.Standard.RadicalCharacter.Value
                     radical.Standard.UnifiedIdeographCharacter
-                    match radical.Simplified with
-                    | Some simplified ->
-                        simplified.RadicalCharacter
+                    for simplified in radical.Simplified do
+                        if simplified.RadicalCharacter.IsSome then
+                            simplified.RadicalCharacter.Value
+
                         simplified.UnifiedIdeographCharacter
-                    | None -> ()
                 ]
                 |> List.map getVariants
                 |> List.reduce Set.union
