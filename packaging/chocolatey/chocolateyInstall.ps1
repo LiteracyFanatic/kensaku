@@ -1,13 +1,20 @@
-$installPath = "$env:ProgramFiles\kensaku"
-
-if (!(Test-Path $installPath)) {
-    New-Item -Path $installPath -ItemType Directory | Out-Null
-}
+$toolsPath = Get-ToolsLocation
+$installPath = "$toolsPath\kensaku"
 
 $githubReleaseUrl = "https://github.com/LiteracyFanatic/kensaku/releases/download/v<VERSION>"
-Invoke-WebRequest -Uri "$githubReleaseUrl/kensaku-win-x64.exe" -OutFile "$installPath\kensaku.exe"
-Invoke-WebRequest -Uri "$githubReleaseUrl/kensaku.db" -OutFile "$installPath\kensaku.db"
+Get-ChocolateyWebFile `
+  -PackageName kensaku `
+  -FileFullPath "$installPath\kensaku.exe" `
+  -Url "$githubReleaseUrl/kensaku-win-x64.exe" `
+  -Checksum '<EXE_SHA256>' `
+  -ChecksumType sha256
 
-Install-ChocolateyPath "$installPath"
+Get-ChocolateyWebFile `
+  -PackageName kensaku `
+  -FileFullPath "$installPath\kensaku.db" `
+  -Url "$githubReleaseUrl/kensaku.db" `
+  -Checksum '<DB_SHA256>' `
+  -ChecksumType sha256
 
-Write-Host "kensaku installed at $installPath"
+Copy-Item -Force kensaku.bat "$installPath\kensaku.bat"
+Install-BinFile -Name kensaku -Path "$installPath\kensaku.bat"

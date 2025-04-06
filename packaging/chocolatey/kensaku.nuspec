@@ -6,7 +6,10 @@
     <authors>Jordan Cannon</authors>
     <tags>japanese dictionary kanji radicals jmdict kanjidic2 jmnedict radkfile kradfile</tags>
     <projectUrl>https://github.com/LiteracyFanatic/kensaku</projectUrl>
+    <packageSourceUrl>https://github.com/LiteracyFanatic/kensaku/tree/master/packaging/chocolatey</packageSourceUrl>
     <licenseUrl>https://github.com/LiteracyFanatic/kensaku/blob/master/LICENSE</licenseUrl>
+    <releaseNotes>https://github.com/LiteracyFanatic/kensaku/releases</releaseNotes>
+    <bugTrackerUrl>https://github.com/LiteracyFanatic/kensaku/issues</bugTrackerUrl>
     <summary>Quick and easy search for Japanese kanji, radicals, and words</summary>
     <description>Quick and easy search for Japanese kanji, radicals, and words</description>
     <title>Kensaku CLI Japanese Dictionary</title>

@@ -1,10 +1,8 @@
-$installPath = "$env:ProgramFiles\kensaku"
+$toolsPath = Get-ToolsLocation
+$installPath = "$toolsPath\kensaku"
 
-# Remove the installation directory
 if (Test-Path $installPath) {
     Remove-Item -Path $installPath -Recurse -Force
 }
 
-Uninstall-ChocolateyPath "$installPath"
-
-Write-Host "kensaku has been removed from $installPath"
+Uninstall-BinFile -Name kensaku -Path "$installPath\kensaku.bat"

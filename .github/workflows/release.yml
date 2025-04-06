@@ -32,6 +32,9 @@ jobs:
     name: Build Kensaku Binaries
     runs-on: ubuntu-latest
     needs: set-version
+    outputs:
+      exe-sha256: ${{ steps.hashes.outputs.exe-sha256 }}
+      db-sha256: ${{ steps.hashes.outputs.db-sha256 }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -54,6 +57,14 @@ jobs:
           files: dist/*
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: v${{ needs.set-version.outputs.version }}
+
+      - name: Compute SHA256 Checksums
+        id: hashes
+        run: |
+          EXE_HASH=$(sha256sum dist/kensaku-win-x64.exe | cut -d ' ' -f1)
+          DB_HASH=$(sha256sum dist/kensaku.db | cut -d ' ' -f1)
+          echo "exe-sha256=$EXE_HASH" >> $GITHUB_OUTPUT
+          echo "db-sha256=$DB_HASH" >> $GITHUB_OUTPUT
 
   linux-packages:
     name: Build Linux Packages
@@ -131,6 +142,13 @@ jobs:
       - name: Update Chocolatey Package Version
         run: |
           sed -i "s|<VERSION>|${{ needs.set-version.outputs.version }}|g" packaging/chocolatey/*
+
+      - name: Insert SHA256 Checksums into chocolateyInstall.ps1
+        run: |
+          EXE_HASH="${{ needs.build-kensaku.outputs.exe-sha256 }}"
+          DB_HASH="${{ needs.build-kensaku.outputs.db-sha256 }}"
+          sed -i "s|<EXE_SHA256>|$EXE_HASH|g" packaging/chocolatey/tools/chocolateyInstall.ps1
+          sed -i "s|<DB_SHA256>|$DB_HASH|g" packaging/chocolatey/tools/chocolateyInstall.ps1
 
       - name: Build Chocolatey Package
         run: |
