@@ -6,6 +6,12 @@ open Kensaku
 open Kensaku.Database
 open Kensaku.Domain
 
+type GetWordQuery = {
+    Reading: string option
+    Meaning: string option
+    Pattern: string option
+}
+
 type GetWordQueryResult = {
     Id: int
     KanjiElements: KanjiElement list
@@ -81,6 +87,45 @@ let getIdsForWordLiterals (word: string) (ctx: DbConnection) =
         from ReadingElements as re
         where re.Value = @Word""",
         {| Word = word |}
+    )
+    |> Seq.toList
+
+let getIdsForWordQuery (query: GetWordQuery) (ctx: DbConnection) =
+    let readingCondition =
+        match query.Reading with
+        | Some _ -> "and re.Value = @Reading"
+        | None -> ""
+
+    let meaningCondition =
+        match query.Meaning with
+        | Some _ -> "and g.Value regexp @Meaning"
+        | None -> ""
+
+    let patternCondition =
+        match query.Pattern with
+        | Some _ ->
+            """and (ke.Value like @Pattern or re.Value like @Pattern)"""
+        | None -> ""
+
+    ctx.Query<int>(
+        sql
+            $"""
+        select distinct e.Id
+        from Entries as e
+        left join KanjiElements as ke on ke.EntryId = e.Id
+        left join ReadingElements as re on re.EntryId = e.Id
+        left join Senses as s on s.EntryId = e.Id
+        left join Glosses as g on g.SenseId = s.Id and g.Language = 'en'
+        where true
+        %s{readingCondition}
+        %s{meaningCondition}
+        %s{patternCondition}
+        order by e.Id;""",
+        {|
+            Reading = query.Reading |> Option.toObj
+            Meaning = query.Meaning |> Option.toObj
+            Pattern = query.Pattern |> Option.toObj
+        |}
     )
     |> Seq.toList
 
@@ -418,5 +463,10 @@ let getWordsByIds (ids: int list) (ctx: DbConnection) =
 
 let getWordLiterals (word: string) (ctx: DbConnection) =
     let ids = getIdsForWordLiterals word ctx
+    let words = getWordsByIds ids ctx
+    words
+
+let getWordsByQuery (query: GetWordQuery) (ctx: DbConnection) =
+    let ids = getIdsForWordQuery query ctx
     let words = getWordsByIds ids ctx
     words

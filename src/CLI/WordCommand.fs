@@ -9,6 +9,9 @@ open Kensaku.Core.Words
 open Spectre.Console
 
 type WordArgs =
+    | Reading of string
+    | Meaning of string
+    | Pattern of string
     | [<MainCommand; Last>] Word of string
     | Format of Format
     | No_Pager
@@ -16,12 +19,18 @@ type WordArgs =
     interface IArgParserTemplate with
         member this.Usage =
             match this with
+            | Reading _ -> "search for words with the given reading"
+            | Meaning _ -> "search for words with a meaning that matches the given regular expression"
+            | Pattern _ -> "search for words matching the given pattern"
             | Word _ -> "show info for the given word"
             | Format _ -> "output format"
             | No_Pager -> "do not use a pager"
 
 let isSearchOption (arg: WordArgs) =
     match arg with
+    | Reading _
+    | Meaning _
+    | Pattern _
     | Word _ -> true
     | Format _
     | No_Pager -> false
@@ -51,7 +60,13 @@ let wordHandler (ctx: DbConnection) (args: ParseResults<WordArgs>) =
     let words =
         match args.TryGetResult(Word) with
         | Some words -> getWordLiterals words ctx
-        | None -> raise (NotImplementedException())
+        | None ->
+            let query = {
+                Reading = args.TryGetResult Reading
+                Meaning = args.TryGetResult Meaning
+                Pattern = args.TryGetResult Pattern
+            }
+            getWordsByQuery query ctx
 
     match words with
     | [] -> ()
