@@ -6,7 +6,6 @@ open System.Text
 [<CLIMutable>]
 type Entry = {
     Id: int
-    IsProperName: bool
 }
 
 [<CLIMutable>]

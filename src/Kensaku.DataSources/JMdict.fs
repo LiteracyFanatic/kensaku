@@ -108,8 +108,6 @@ type Sense = {
 /// </summary>
 type JMdictEntry = {
     Id: int
-    // Where did this come from?
-    IsProperName: bool
     KanjiElements: KanjiElement list
     ReadingElements: ReadingElement list
     Senses: Sense list
@@ -238,7 +236,6 @@ module private JMdict =
         streamXmlElementsAsync "entry" stream closeStream ct
         |> TaskSeq.map (fun entry -> {
             Id = entry.Element("ent_seq").Value |> int
-            IsProperName = false
             KanjiElements = parseElementList "k_ele" parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" parseReadingElement entry
             Senses = parseElementList "sense" parseSense entry

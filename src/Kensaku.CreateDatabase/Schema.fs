@@ -342,10 +342,9 @@ module Schema =
         for entry in jMdictEntries do
             let param: Tables.Entry = {
                 Id = entry.Id
-                IsProperName = entry.IsProperName
             }
 
-            ctx.Execute(sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName)", param)
+            ctx.Execute(sql "insert into Entries ('Id') values (@Id)", param)
             |> ignore
 
             populateKanjiElements ctx entry.Id entry.KanjiElements
@@ -424,11 +423,10 @@ module Schema =
         for entry in jMnedictEntries do
             let param: Tables.Entry = {
                 Id = entry.Id
-                IsProperName = entry.IsProperName
             }
 
             ctx.Execute(
-                sql "insert into Entries ('Id', 'IsProperName') values (@Id, @IsProperName) on conflict do nothing",
+                sql "insert into Entries ('Id') values (@Id) on conflict do nothing",
                 param
             )
             |> ignore

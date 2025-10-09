@@ -26,8 +26,6 @@ type Translation = {
 /// </summary>
 type JMnedictEntry = {
     Id: int
-    // Where did this come from?
-    IsProperName: bool
     KanjiElements: KanjiElement list
     ReadingElements: ReadingElement list
     Translations: Translation list
@@ -51,7 +49,6 @@ module private JMnedict =
         streamXmlElementsAsync "entry" stream closeStream ct
         |> TaskSeq.map (fun entry -> {
             Id = entry.Element("ent_seq").Value |> int
-            IsProperName = false
             KanjiElements = parseElementList "k_ele" JMdict.parseKanjiElement entry
             ReadingElements = parseElementList "r_ele" JMdict.parseReadingElement entry
             Translations = parseElementList "trans" parseTranslation entry

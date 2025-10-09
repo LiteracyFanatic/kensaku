@@ -4,7 +4,6 @@ BEGIN TRANSACTION;
 DROP TABLE IF EXISTS "Entries";
 CREATE TABLE "Entries" (
     "Id" INTEGER NOT NULL UNIQUE,
-    "IsProperName" INTEGER NOT NULL,
     PRIMARY KEY("Id")
 );
 DROP TABLE IF EXISTS "SenseCrossReferences";

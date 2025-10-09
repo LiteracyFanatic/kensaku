@@ -86,8 +86,6 @@ type Sense = {
 
 type JMdictEntry = {
     Id: int
-    // Where did this come from?
-    IsProperName: bool
     KanjiElements: KanjiElement list
     ReadingElements: ReadingElement list
     Senses: Sense list
@@ -106,8 +104,6 @@ type Translation = {
 
 type JMnedictEntry = {
     Id: int
-    // Where did this come from?
-    IsProperName: bool
     KanjiElements: KanjiElement list
     ReadingElements: ReadingElement list
     Translations: Translation list
