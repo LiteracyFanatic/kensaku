@@ -4,17 +4,26 @@ open FSharp.Control
 open System.IO
 open System.Threading
 
+/// <summary>
+/// Represents a translated name string (trans_det element) with its language code.
+/// </summary>
 type TranslationContents = {
     Value: string
     LanguageCode: string
 }
 
+/// <summary>
+/// Represents a translation block (trans element) including name types and cross references.
+/// </summary>
 type Translation = {
     NameTypes: string list
     CrossReferences: CrossReference list
     Contents: TranslationContents list
 }
 
+/// <summary>
+/// Represents a JMnedict entry composed of kanji elements, reading elements, and translations.
+/// </summary>
 type JMnedictEntry = {
     Id: int
     // Where did this come from?
@@ -48,12 +57,27 @@ module private JMnedict =
             Translations = parseElementList "trans" parseTranslation entry
         })
 
+/// <summary>
+/// Provides methods to parse JMnedict entries asynchronously.
+/// </summary>
 [<AbstractClass; Sealed>]
 type JMnedict =
+    /// <summary>
+    /// Parses the JMnedict entries from a stream asynchronously.
+    /// </summary>
+    /// <param name="stream">The stream containing the JMnedict data.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A <see cref="FSharp.Control.TaskSeq{T}"/> that produces <see cref="JMnedictEntry"/> values.</returns>
     static member ParseEntriesAsync(stream: Stream, ?ct: CancellationToken) =
         let ct = defaultArg ct CancellationToken.None
         JMnedict.parseEntriesAsync stream false ct
 
+    /// <summary>
+    /// Parses the JMnedict entries from a file path asynchronously.
+    /// </summary>
+    /// <param name="path">The file path containing the JMnedict data.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A <see cref="FSharp.Control.TaskSeq{T}"/> that produces <see cref="JMnedictEntry"/> values.</returns>
     static member ParseEntriesAsync(path: string, ?ct: CancellationToken) =
         let stream = File.OpenRead(path)
         let ct = defaultArg ct CancellationToken.None

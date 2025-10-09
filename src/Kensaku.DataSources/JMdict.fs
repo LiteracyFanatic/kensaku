@@ -5,12 +5,18 @@ open System.IO
 open System.Text
 open System.Threading
 
+/// <summary>
+/// Represents a written kanji form of a dictionary headword (k_ele element).
+/// </summary>
 type KanjiElement = {
     Value: string
     Information: string list
     Priority: string list
 }
 
+/// <summary>
+/// Represents a reading (pronunciation) of a dictionary headword (r_ele element).
+/// </summary>
 type ReadingElement = {
     Value: string
     IsTrueReading: bool
@@ -19,6 +25,10 @@ type ReadingElement = {
     Priority: string list
 }
 
+/// <summary>
+/// Represents a cross reference (xref) to a related JMdict entry.
+/// Any of the components (kanji, reading, sense index) may be omitted.
+/// </summary>
 type CrossReference = {
     Kanji: string option
     Reading: string option
@@ -32,6 +42,9 @@ type CrossReference = {
         |> String.concat " "
         |> sprintf "See also %s"
 
+/// <summary>
+/// Represents an antonym reference (ant) to another entry.
+/// </summary>
 type Antonym = {
     Kanji: string option
     Reading: string option
@@ -43,6 +56,9 @@ type Antonym = {
         |> List.map Option.get
         |> String.concat " "
 
+/// <summary>
+/// Represents etymological information (lsource) about a borrowing from another language.
+/// </summary>
 type LanguageSource = {
     Value: string
     Code: string
@@ -60,12 +76,19 @@ type LanguageSource = {
 
         sb.ToString()
 
+/// <summary>
+/// Represents a gloss (translation) for a sense in a given language.
+/// </summary>
 type Gloss = {
     Value: string
     LanguageCode: string
     Type: string option
 }
 
+/// <summary>
+/// Represents a single sense of a dictionary entry including part-of-speech,
+/// semantic fields, glosses, and cross references.
+/// </summary>
 type Sense = {
     KanjiRestrictions: string list
     ReadingRestrictions: string list
@@ -80,6 +103,9 @@ type Sense = {
     Glosses: Gloss list
 }
 
+/// <summary>
+/// Represents a JMdict entry composed of kanji elements, reading elements, and senses.
+/// </summary>
 type JMdictEntry = {
     Id: int
     // Where did this come from?
@@ -218,12 +244,27 @@ module private JMdict =
             Senses = parseElementList "sense" parseSense entry
         })
 
+/// <summary>
+/// Provides methods to parse JMdict entries asynchronously.
+/// </summary>
 [<AbstractClass; Sealed>]
 type JMdict =
+    /// <summary>
+    /// Parses the JMdict entries from a stream asynchronously.
+    /// </summary>
+    /// <param name="stream">The stream containing the JMdict data.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A <see cref="FSharp.Control.TaskSeq{T}"/> that produces <see cref="JMdictEntry"/> values.</returns>
     static member ParseEntriesAsync(stream: Stream, ?ct: CancellationToken) =
         let ct = defaultArg ct CancellationToken.None
         JMdict.parseEntriesAsync stream false ct
 
+    /// <summary>
+    /// Parses the JMdict entries from a file path asynchronously.
+    /// </summary>
+    /// <param name="path">The file path containing the JMdict data.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A <see cref="FSharp.Control.TaskSeq{T}"/> that produces <see cref="JMdictEntry"/> values.</returns>
     static member ParseEntriesAsync(path: string, ?ct: CancellationToken) =
         let stream = File.OpenRead(path)
         let ct = defaultArg ct CancellationToken.None

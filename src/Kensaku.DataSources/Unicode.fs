@@ -3,11 +3,17 @@ namespace Kensaku.DataSources
 open System.Text
 open System.Threading
 
+/// <summary>
+/// Represents the radical glyph (if any) and its unified ideograph code point.
+/// </summary>
 type CJKRadicalValue = {
     RadicalCharacter: Rune option
     UnifiedIdeographCharacter: Rune
 }
 
+/// <summary>
+/// Represents a CJK radical with its standard form and optional simplified derivatives.
+/// </summary>
 type CJKRadical = {
     RadicalNumber: int
     Standard: CJKRadicalValue
@@ -52,8 +58,18 @@ module Unicode =
             |> Seq.collect (fun group -> group |> Seq.map (fun c -> c, group))
             |> Map.ofSeq
 
+    /// <summary>
+    /// Provides methods to parse equivalent unified ideographs asynchronously.
+    /// </summary>
     [<AbstractClass; Sealed>]
     type EquivalentUnifiedIdeograph =
+        /// <summary>
+        /// Parses the equivalent unified ideographs from a stream asynchronously.
+        /// </summary>
+        /// <param name="stream">The stream containing the equivalent unified ideographs data.</param>
+        /// <param name="encoding">Optional encoding of the stream. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a map from each <see cref="Rune"/> to the set of equivalent unified <see cref="Rune"/> values containing it.</returns>
         static member GetCharactersAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
             task {
                 let encoding = defaultArg encoding Encoding.UTF8
@@ -63,6 +79,13 @@ module Unicode =
                 return EquivalentUnifiedIdeograph.parseEquivalentCharacters text
             }
 
+        /// <summary>
+        /// Parses the equivalent unified ideographs from a file path asynchronously.
+        /// </summary>
+        /// <param name="path">The file path containing the equivalent unified ideographs data.</param>
+        /// <param name="encoding">Optional encoding of the file. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a map from each <see cref="Rune"/> to the set of equivalent unified <see cref="Rune"/> values containing it.</returns>
         static member GetCharactersAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
             let stream = File.OpenRead(path)
             EquivalentUnifiedIdeograph.GetCharactersAsync(stream, ?encoding = encoding, ?ct = ct)
@@ -86,8 +109,7 @@ module Unicode =
                         UnifiedIdeographCharacter = hexStringToRune (m.Groups[3].Value)
                     }
 
-                    let numberOfApostrophes =
-                        m.Groups[1].Value |> Seq.filter ((=) '\'') |> Seq.length
+                    let numberOfApostrophes = m.Groups[1].Value |> Seq.filter ((=) '\'') |> Seq.length
 
                     // 1 apostrophe indicates a Chinese simplified form. 2 or 3 apostrophes indicates a non-Chinese simplified form.
                     match numberOfApostrophes with
@@ -104,8 +126,18 @@ module Unicode =
 
             radicals |> Seq.map (_.Value) |> Seq.toList
 
+    /// <summary>
+    /// Provides methods to parse CJK radicals asynchronously.
+    /// </summary>
     [<AbstractClass; Sealed>]
     type CJKRadicals =
+        /// <summary>
+        /// Parses the CJK radicals from a stream asynchronously.
+        /// </summary>
+        /// <param name="stream">The stream containing the CJK radicals data.</param>
+        /// <param name="encoding">Optional encoding of the stream. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a list of parsed <see cref="CJKRadical"/> values.</returns>
         static member GetCJKRadicals(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
             task {
                 let encoding = defaultArg encoding Encoding.UTF8
@@ -115,6 +147,13 @@ module Unicode =
                 return CJKRadicals.parseCJKRadicals text
             }
 
+        /// <summary>
+        /// Parses the CJK radicals from a file path asynchronously.
+        /// </summary>
+        /// <param name="path">The file path containing the CJK radicals data.</param>
+        /// <param name="encoding">Optional encoding of the file. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a list of parsed <see cref="CJKRadical"/> values.</returns>
         static member GetCJKRadicals(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
             let stream = File.OpenRead(path)
             CJKRadicals.GetCJKRadicals(stream, ?encoding = encoding, ?ct = ct)
@@ -141,8 +180,18 @@ module Unicode =
                     None)
             |> Map.ofArray
 
+    /// <summary>
+    /// Provides methods to parse derived radical names asynchronously.
+    /// </summary>
     [<AbstractClass; Sealed>]
     type DerivedName =
+        /// <summary>
+        /// Parses the derived radical names from a stream asynchronously.
+        /// </summary>
+        /// <param name="stream">The stream containing the derived radical names data.</param>
+        /// <param name="encoding">Optional encoding of the stream. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a map from radical <see cref="Rune"/> values to their derived names.</returns>
         static member ParseDerivedRadicalNamesAsync(stream: Stream, ?encoding: Encoding, ?ct: CancellationToken) =
             task {
                 let encoding = defaultArg encoding Encoding.UTF8
@@ -152,6 +201,13 @@ module Unicode =
                 return DerivedName.parseDerivedRadicalNames text
             }
 
+        /// <summary>
+        /// Parses the derived radical names from a file path asynchronously.
+        /// </summary>
+        /// <param name="path">The file path containing the derived radical names data.</param>
+        /// <param name="encoding">Optional encoding of the file. Defaults to UTF-8.</param>
+        /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a map from radical <see cref="Rune"/> values to their derived names.</returns>
         static member ParseDerivedRadicalNamesAsync(path: string, ?encoding: Encoding, ?ct: CancellationToken) =
             let stream = File.OpenRead(path)
             DerivedName.ParseDerivedRadicalNamesAsync(stream, ?encoding = encoding, ?ct = ct)

@@ -5,6 +5,10 @@ open System.IO
 open System.Text
 open System.Threading
 
+/// <summary>
+/// Represents a single radical entry parsed from the radkfile containing its stroke count
+/// and the set of kanji that share the radical.
+/// </summary>
 type RadkEntry = {
     Radical: Rune
     StrokeCount: int
@@ -76,6 +80,13 @@ module RadkFile =
             rune "歯", 0 // 006B6F | CJK Unified Ideographs        | CJK character Nelson 5428
         ]
 
+    /// <summary>
+    /// Tries to get the radical number for a given radical.
+    /// </summary>
+    /// <param name="radical">The radical to look up.</param>
+    /// <returns>
+    /// An option containing the radical number if found, or <c>None</c> if the radical is not found.
+    /// </returns>
     let tryGetRadicalNumber (radical: Rune) =
         match charToRadicalNumber.TryFind radical with
         | Some 0
@@ -103,8 +114,18 @@ module RadkFile =
             | [ a; b ] -> { a with Kanji = a.Kanji + b.Kanji }
             | _ -> failwithf "Expected exactly one entry for %A in each radk file. Received %A." radical pair)
 
+/// <summary>
+/// Provides methods to parse radkfile entries asynchronously and combine <see cref="RadkEntry"/> values.
+/// </summary>
 [<AbstractClass; Sealed>]
 type RadkFile =
+    /// <summary>
+    /// Parses the radkfile entries from a stream asynchronously.
+    /// </summary>
+    /// <param name="stream">The stream containing the radkfile data.</param>
+    /// <param name="encoding">Optional encoding of the stream. If using the original source files, you likely need to use EUC-JP. Defaults to UTF-8.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a list of parsed <see cref="RadkEntry"/> values.</returns>
     static member ParseEntriesAsync
         (replacements: IDictionary<Rune, Rune>, stream: Stream, ?encoding: Encoding, ?ct: CancellationToken)
         =
@@ -117,11 +138,24 @@ type RadkFile =
             return RadkFile.parseEntries replacements text
         }
 
+    /// <summary>
+    /// Parses the radkfile entries from a file path asynchronously.
+    /// </summary>
+    /// <param name="path">The file path containing the radkfile data.</param>
+    /// <param name="encoding">Optional encoding of the file. If using the original source files, you likely need to use EUC-JP. Defaults to UTF-8.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    /// <returns>A task that produces a list of parsed <see cref="RadkEntry"/> values.</returns>
     static member ParseEntriesAsync
         (replacements: IDictionary<Rune, Rune>, path: string, ?encoding: Encoding, ?ct: CancellationToken)
         =
         let stream = File.OpenRead(path)
         RadkFile.ParseEntriesAsync(replacements, stream, ?encoding = encoding, ?ct = ct)
 
+    /// <summary>
+    /// Combines entries from the radkfile and radkfile2 files.
+    /// </summary>
+    /// <param name="radkFileEntries">The first list of radkfile entries.</param>
+    /// <param name="radkFile2Entries">The second list of radkfile entries.</param>
+    /// <returns>A list containing the merged <see cref="RadkEntry"/> values.</returns>
     static member CombineEntries(radkFileEntries: RadkEntry list, radkFile2Entries: RadkEntry list) =
         RadkFile.combineEntries radkFileEntries radkFile2Entries
