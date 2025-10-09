@@ -1,8 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net7.0;net8.0;net9.0</TargetFrameworks>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Deterministic>true</Deterministic>
+    <RepositoryUrl>https://github.com/LiteracyFanatic/kensaku</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <PackageId>Kensaku.DataSources</PackageId>
+    <Title>Kensaku.DataSources</Title>
+    <Authors>Jordan Cannon</Authors>
+    <Description>Parsers for major Japanese lexical and kanji data sets (JMdict, JMnedict, Kanjidic2, radkfile/kradfile, Unicode, WaniKani) exposed as streaming async APIs.</Description>
+    <PackageTags>Japanese;JMdict;JMnedict;Kanjidic2;WaniKani;Unicode;Kanji;Dictionary;FSharp</PackageTags>
+    <PackageProjectUrl>https://github.com/LiteracyFanatic/kensaku</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <Version>0.1.0-preview.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Utilities.fs" />
@@ -13,6 +28,9 @@
     <Compile Include="RadkFile.fs" />
     <Compile Include="Unicode.fs" />
     <Compile Include="WaniKani.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Control.TaskSeq" Version="0.4.0" />
