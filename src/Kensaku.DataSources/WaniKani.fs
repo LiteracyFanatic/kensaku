@@ -68,37 +68,17 @@ and private WaniKaniImageJsonConverter() =
     inherit JsonConverter<WaniKaniImage>()
 
     override this.Read(reader: byref<Utf8JsonReader>, typeToConvert: Type, options: JsonSerializerOptions) =
-        // Clone reader so we don't change its position
-        let mutable readerClone = reader
-        let doc = JsonDocument.ParseValue(&readerClone).RootElement
-
-        match doc.GetProperty("content_type").GetString() with
-        | "image/svg+xml" -> Svg(JsonSerializer.Deserialize<WaniKaniSvg>(&reader, options))
-        | "image/png" -> Png(JsonSerializer.Deserialize<WaniKaniPng>(&reader, options))
+        use doc = JsonDocument.ParseValue(&reader)
+        let el = doc.RootElement
+        match el.GetProperty("content_type").GetString() with
+        | "image/svg+xml" -> Svg(JsonSerializer.Deserialize<WaniKaniSvg>(el, options))
+        | "image/png" -> Png(JsonSerializer.Deserialize<WaniKaniPng>(el, options))
         | contentType -> raise (JsonException($"Unrecognized content_type: \"%s{contentType}\""))
 
     override this.Write(writer: Utf8JsonWriter, value: WaniKaniImage, options: JsonSerializerOptions) =
-        writer.WriteStartObject()
-
         match value with
-        | Svg svg ->
-            writer.WriteString(nameof svg.url, svg.url)
-            writer.WritePropertyName(nameof svg.metadata)
-            writer.WriteStartObject()
-            writer.WriteBoolean(nameof svg.metadata.inline_styles, svg.metadata.inline_styles)
-            writer.WriteEndObject()
-            writer.WriteString(nameof svg.content_type, svg.content_type)
-        | Png png ->
-            writer.WriteString(nameof png.url, png.url)
-            writer.WritePropertyName(nameof png.metadata)
-            writer.WriteStartObject()
-            writer.WriteString(nameof png.metadata.color, png.metadata.color)
-            writer.WriteString(nameof png.metadata.dimensions, png.metadata.dimensions)
-            writer.WriteString(nameof png.metadata.style_name, png.metadata.style_name)
-            writer.WriteEndObject()
-            writer.WriteString(nameof png.content_type, png.content_type)
-
-        writer.WriteEndObject()
+        | Svg svg -> JsonSerializer.Serialize(writer, svg, options)
+        | Png png -> JsonSerializer.Serialize(writer, png, options)
 
 /// <summary>
 /// Represents the data payload for a WaniKani radical subject.
