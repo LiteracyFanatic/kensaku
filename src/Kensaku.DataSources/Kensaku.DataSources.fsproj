@@ -17,7 +17,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <EnablePackageValidation>true</EnablePackageValidation>
-    <Version>0.1.0-preview.1</Version>
+    <Version>0.1.0-preview.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Utilities.fs" />
