@@ -5,14 +5,24 @@ module Kanji =
 
     open Dapper
 
-    type KeyRadical =
-        | Kangxi of int
-        | Nelson of int
+    type KeyRadicalSystem =
+        | Classical
+        | Nelson
 
-        member this.Value =
+        member this.ToDbType =
             match this with
-            | Kangxi i -> i
-            | Nelson i -> i
+            | Classical -> "classical"
+            | Nelson -> "nelson_c"
+
+    type KeyRadicalSelector =
+        | Number of int
+        | Literal of Rune
+        | Meaning of string
+
+    type KeyRadicalQuery = {
+        System: KeyRadicalSystem
+        Selector: KeyRadicalSelector
+    }
 
     type CharacterCode =
         | SkipCode of string
@@ -39,7 +49,7 @@ module Kanji =
         Nanori: string option
         CommonOnly: bool
         Pattern: string option
-        KeyRadical: KeyRadical option
+        KeyRadical: KeyRadicalQuery option
     }
 
     type GetKanjiQueryParams = {
@@ -52,7 +62,10 @@ module Kanji =
         Nanori: string option
         CommonOnly: bool
         Pattern: string option
-        KeyRadical: int option
+        KeyRadicalType: string option
+        KeyRadicalNumber: int option
+        KeyRadicalLiteral: Rune option
+        KeyRadicalMeaning: string option
     } with
 
         static member FromQuery(query: GetKanjiQuery) = {
@@ -65,7 +78,25 @@ module Kanji =
             Nanori = query.Nanori
             CommonOnly = query.CommonOnly
             Pattern = query.Pattern
-            KeyRadical = query.KeyRadical |> Option.map (_.Value)
+            KeyRadicalType = query.KeyRadical |> Option.map (_.System.ToDbType)
+            KeyRadicalNumber =
+                query.KeyRadical
+                |> Option.bind (fun q ->
+                    match q.Selector with
+                    | Number n -> Some n
+                    | _ -> None)
+            KeyRadicalLiteral =
+                query.KeyRadical
+                |> Option.bind (fun q ->
+                    match q.Selector with
+                    | Literal r -> Some r
+                    | _ -> None)
+            KeyRadicalMeaning =
+                query.KeyRadical
+                |> Option.bind (fun q ->
+                    match q.Selector with
+                    | Meaning m -> Some m
+                    | _ -> None)
         }
 
     type SkipMisclassification =
@@ -235,6 +266,28 @@ module Kanji =
                     and (@Nanori is null or n.Value = @Nanori)
                     and (not @CommonOnly or c.Frequency is not null)
                     and %s{makePatternCondition query.Pattern}
+                    and (
+                        @KeyRadicalType is null or exists (
+                            select 1 from KeyRadicals as skr
+                            where skr.CharacterId = c.Id and skr.Type = @KeyRadicalType and (
+                                (@KeyRadicalNumber is not null and skr.Value = @KeyRadicalNumber)
+                                or (
+                                    @KeyRadicalLiteral is not null and skr.Value in (
+                                        select r.Number from Radicals as r
+                                        join RadicalValues as rv on rv.RadicalId = r.Id
+                                        where rv.Value = @KeyRadicalLiteral
+                                    )
+                                )
+                                or (
+                                    @KeyRadicalMeaning is not null and skr.Value in (
+                                        select r.Number from Radicals as r
+                                        join RadicalMeanings as rm on rm.RadicalId = r.Id
+                                        where rm.Value like @KeyRadicalMeaning
+                                    )
+                                )
+                            )
+                        )
+                    )
                 ) as x
                 where not exists (
                     select sri.Id

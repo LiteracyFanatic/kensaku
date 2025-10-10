@@ -19,6 +19,8 @@ module KanjiCommand =
         | Max_Strokes of int
         | Include_Stroke_Miscounts
         | Radicals of string list
+        | Kangxi of string
+        | Nelson of string
         | Skip_Code of string
         | Sh_Code of string
         | Four_Corner_Code of string
@@ -42,6 +44,10 @@ module KanjiCommand =
                     "include kanji which are commonly mistaken to have the given number of strokes"
                 | Radicals _ ->
                     "search for kanji containing the given radicals. CJK, Kangxi, and WaniKani radical names are supported as well, so both 東 and \"east\" are valid."
+                | Kangxi _ ->
+                    "search by key radical using the Kangxi (classical) system; supports radical number (e.g. 85), literal (e.g. 水), or meaning (e.g. \"water\")"
+                | Nelson _ ->
+                    "search by key radical using the Nelson system; supports radical number (e.g. 85), literal (e.g. 水), or meaning (e.g. \"water\")"
                 | Skip_Code _ -> "search for kanji with the given SKIP code"
                 | Sh_Code _ ->
                     """search for kanji with the given descriptor code from "The Kanji Dictionary" (Tuttle 1996) by Spahn and Hadamitzky"""
@@ -130,6 +136,12 @@ module KanjiCommand =
 
             args.Raise($"Only one of %s{codeArgNames} can be used")
 
+    let validateKeyRadicalArgs (args: ParseResults<KanjiArgs>) =
+        if args.Contains(Kangxi) && args.Contains(Nelson) then
+            let k = args.Parser.GetArgumentCaseInfo(Kangxi).Name.Value
+            let n = args.Parser.GetArgumentCaseInfo(Nelson).Name.Value
+            args.Raise($"Only one of %s{k} or %s{n} can be used")
+
     let validateStrokeArgs (args: ParseResults<KanjiArgs>) =
         if
             args.Contains(Strokes)
@@ -153,6 +165,8 @@ module KanjiCommand =
         | Max_Strokes _
         | Include_Stroke_Miscounts
         | Radicals _
+        | Kangxi _
+        | Nelson _
         | Skip_Code _
         | Sh_Code _
         | Four_Corner_Code _
@@ -183,6 +197,7 @@ module KanjiCommand =
 
     let validateKanjiArgs (args: ParseResults<KanjiArgs>) =
         validateCodeArgs args
+        validateKeyRadicalArgs args
         validateStrokeArgs args
         validateAtLeastOneArg args
         validateNoOtherSearchOptionsWithLiteralKanji args
@@ -221,6 +236,52 @@ module KanjiCommand =
                     if not recognizedName then
                         args.Raise($"Could not find a radical named \"%s{searchRadicalMeaning}\"")
 
+                let keyRadicalQuery =
+                    match args.TryGetResult(Kangxi), args.TryGetResult(Nelson) with
+                    | Some value, None ->
+                        match Int32.TryParse(value) with
+                        | true, n ->
+                            Some {
+                                System = KeyRadicalSystem.Classical
+                                Selector = KeyRadicalSelector.Number n
+                            }
+                        | _ ->
+                            if value |> String.exists Char.isJapanese then
+                                value
+                                |> String.getRunes
+                                |> List.tryHead
+                                |> Option.map (fun r -> {
+                                    System = KeyRadicalSystem.Classical
+                                    Selector = KeyRadicalSelector.Literal r
+                                })
+                            else
+                                Some {
+                                    System = KeyRadicalSystem.Classical
+                                    Selector = KeyRadicalSelector.Meaning value
+                                }
+                    | None, Some value ->
+                        match Int32.TryParse(value) with
+                        | true, n ->
+                            Some {
+                                System = KeyRadicalSystem.Nelson
+                                Selector = KeyRadicalSelector.Number n
+                            }
+                        | _ ->
+                            if value |> String.exists Char.isJapanese then
+                                value
+                                |> String.getRunes
+                                |> List.tryHead
+                                |> Option.map (fun r -> {
+                                    System = KeyRadicalSystem.Nelson
+                                    Selector = KeyRadicalSelector.Literal r
+                                })
+                            else
+                                Some {
+                                    System = KeyRadicalSystem.Nelson
+                                    Selector = KeyRadicalSelector.Meaning value
+                                }
+                    | _ -> None
+
                 let query = {
                     MinStrokeCount = minStrokeCount
                     MaxStrokeCount = maxStrokeCount
@@ -238,7 +299,7 @@ module KanjiCommand =
                     Nanori = args.TryGetResult Nanori
                     CommonOnly = args.Contains Common_Only
                     Pattern = args.TryGetResult Pattern
-                    KeyRadical = None
+                    KeyRadical = keyRadicalQuery
                 }
 
                 getKanjiAsync query ctx
