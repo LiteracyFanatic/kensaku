@@ -10,6 +10,7 @@
     <Compile Include="TypeHandlers.fs" />
     <Compile Include="KensakuConnection.fs" />
     <Compile Include="Kanji.fs" />
+    <Compile Include="Radicals.fs" />
     <Compile Include="Words.fs" />
   </ItemGroup>
   <ItemGroup>

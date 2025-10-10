@@ -16,6 +16,7 @@
     <Compile Include="Formatting.fs" />
     <Compile Include="LicensesCommand.fs" />
     <Compile Include="VersionCommand.fs" />
+    <Compile Include="RadicalCommand.fs" />
     <Compile Include="KanjiCommand.fs" />
     <Compile Include="WordCommand.fs" />
     <Compile Include="Program.fs" />
