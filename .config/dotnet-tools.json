@@ -3,14 +3,14 @@
   "isRoot": true,
   "tools": {
     "fantomas": {
-      "version": "7.0.1",
+      "version": "7.0.3",
       "commands": [
         "fantomas"
       ],
       "rollForward": false
     },
     "nuget-license": {
-      "version": "3.1.2",
+      "version": "4.0.0",
       "commands": [
         "nuget-license"
       ],
