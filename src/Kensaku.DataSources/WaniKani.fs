@@ -70,6 +70,7 @@ and private WaniKaniImageJsonConverter() =
     override this.Read(reader: byref<Utf8JsonReader>, typeToConvert: Type, options: JsonSerializerOptions) =
         use doc = JsonDocument.ParseValue(&reader)
         let el = doc.RootElement
+
         match el.GetProperty("content_type").GetString() with
         | "image/svg+xml" -> Svg(JsonSerializer.Deserialize<WaniKaniSvg>(el, options))
         | "image/png" -> Png(JsonSerializer.Deserialize<WaniKaniPng>(el, options))
