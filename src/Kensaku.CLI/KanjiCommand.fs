@@ -195,12 +195,21 @@ module KanjiCommand =
         if args.Contains(Kanji) && searchOptions.Length > 1 then
             args.Raise("You can not use other search options when passing a literal kanji")
 
+    let validateNoUnrecognizedOptions (args: ParseResults<KanjiArgs>) =
+        match args.TryGetResult(Kanji) with
+        | Some kanjiList ->
+            kanjiList
+            |> List.tryFind (fun k -> k.StartsWith("-"))
+            |> Option.iter (fun k -> args.Raise($"unrecognized option: '%s{k}'"))
+        | _ -> ()
+
     let validateKanjiArgs (args: ParseResults<KanjiArgs>) =
         validateCodeArgs args
         validateKeyRadicalArgs args
         validateStrokeArgs args
         validateAtLeastOneArg args
         validateNoOtherSearchOptionsWithLiteralKanji args
+        validateNoUnrecognizedOptions args
 
     let kanjiHandler (ctx: KensakuConnection) (args: ParseResults<KanjiArgs>) =
         validateKanjiArgs args

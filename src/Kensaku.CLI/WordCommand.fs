@@ -44,9 +44,15 @@ module WordCommand =
         if args.Contains(Word) && searchOptions.Length > 1 then
             args.Raise("You can not use other search options when passing a literal word")
 
+    let validateNoUnrecognizedOptions (args: ParseResults<WordArgs>) =
+        match args.TryGetResult(Word) with
+        | Some word when word.StartsWith("-") -> args.Raise($"unrecognized option: '%s{word}'")
+        | _ -> ()
+
     let validateWordArgs (args: ParseResults<WordArgs>) =
         validateAtLeastOneArg args
         validateNoOtherSearchOptionsWithLiteralWord args
+        validateNoUnrecognizedOptions args
 
     let wordHandler (ctx: KensakuConnection) (args: ParseResults<WordArgs>) =
         validateWordArgs args

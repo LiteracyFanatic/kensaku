@@ -95,11 +95,20 @@ module RadicalCommand =
             if searchCount > 1 then
                 args.Raise("You can only use one search option at a time")
 
+    let validateNoUnrecognizedOptions (args: ParseResults<RadicalArgs>) =
+        match args.TryGetResult(Radical) with
+        | Some radicalList ->
+            radicalList
+            |> List.tryFind (fun r -> r.StartsWith("-"))
+            |> Option.iter (fun r -> args.Raise($"unrecognized option: '%s{r}'"))
+        | _ -> ()
+
     let validateRadicalArgs (args: ParseResults<RadicalArgs>) =
         validateStrokeArgs args
         validateAtLeastOneArg args
         validateNoOtherSearchOptionsWithLiteralRadical args
         validateOnlyOneSearchOption args
+        validateNoUnrecognizedOptions args
 
     let radicalHandler (ctx: KensakuConnection) (args: ParseResults<RadicalArgs>) =
         validateRadicalArgs args
