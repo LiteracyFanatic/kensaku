@@ -378,3 +378,37 @@ module Formatting =
 
             for note in notes do
                 console.MarkupLineNonBreaking(note)
+
+    let printRadical (console: StringWriterAnsiConsole) (radical: Radicals.RadicalQueryResult) =
+        let radicalDisplay = radical.Values |> List.sortDescending |> List.head |> string
+
+        console.WriteLineNonBreaking($"Radical: %s{radicalDisplay}")
+
+        console.WriteNonBreaking("Number: ")
+
+        match radical.Number with
+        | Some number -> console.WriteLineNonBreaking(string number)
+        | None -> console.WriteLineNonBreaking("-")
+
+        console.WriteLineNonBreaking($"Stroke Count: %i{radical.StrokeCount}")
+
+        if radical.Values.Length > 1 then
+            console.WriteNonBreaking("Variants: ")
+
+            for i in 1 .. radical.Values.Length - 1 do
+                if i > 1 then
+                    console.WriteNonBreaking(", ")
+
+                console.WriteNonBreaking(string radical.Values[i])
+
+            console.WriteLine()
+
+        if radical.Meanings.Length > 0 then
+            let meanings = radical.Meanings |> String.concat ", "
+            console.WriteLineNonBreaking($"Meanings: %s{meanings}")
+
+        if radical.Names.Length > 0 then
+            let names = radical.Names |> String.concat ", "
+            console.WriteLineNonBreaking($"Names: %s{names}")
+
+        console.WriteLineNonBreaking($"Kanji Count: %i{radical.KanjiCount}")

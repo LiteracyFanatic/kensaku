@@ -5,11 +5,13 @@ open Argu
 
 open Kensaku.CLI.KanjiCommand
 open Kensaku.CLI.LicensesCommand
+open Kensaku.CLI.RadicalCommand
 open Kensaku.CLI.VersionCommand
 open Kensaku.CLI.WordCommand
 open Kensaku.Core
 
 type Args =
+    | [<SubCommand; CliPrefix(CliPrefix.None)>] Radical of ParseResults<RadicalArgs>
     | [<SubCommand; CliPrefix(CliPrefix.None)>] Kanji of ParseResults<KanjiArgs>
     | [<SubCommand; CliPrefix(CliPrefix.None)>] Word of ParseResults<WordArgs>
     | [<SubCommand; CliPrefix(CliPrefix.None)>] Licenses
@@ -18,6 +20,7 @@ type Args =
     interface IArgParserTemplate with
         member this.Usage =
             match this with
+            | Radical _ -> "search for radicals"
             | Kanji _ -> "search for kanji"
             | Word _ -> "search for words"
             | Licenses -> "display license info"
@@ -51,6 +54,7 @@ let main argv =
     let results = parser.ParseCommandLine(argv)
 
     match results.GetSubCommand() with
+    | Radical radicalArgs -> radicalHandler (getDbConnection ()) radicalArgs
     | Kanji kanjiArgs -> kanjiHandler (getDbConnection ()) kanjiArgs
     | Word wordArgs -> wordHandler (getDbConnection ()) wordArgs
     | Licenses -> licensesHandler ()
