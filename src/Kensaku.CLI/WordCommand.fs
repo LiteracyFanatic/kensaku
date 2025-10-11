@@ -31,7 +31,7 @@ module WordCommand =
         match arg with
         | Word _
         | Reading _
-        | Meaning _
+        | Meaning _ -> true
         | Format _
         | No_Pager -> false
 
