@@ -192,7 +192,6 @@ module Kanji =
                 )"
         | None -> "true"
 
-    // TODO: Implement search by key radical
     let private getKanjiIdsAsync (query: GetKanjiQuery) (ctx: KensakuConnection) =
         task {
             let! _ = ctx.ExecuteAsync(sql "create temp table SearchRadicals (Value text not null);")
