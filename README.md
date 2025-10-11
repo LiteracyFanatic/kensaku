@@ -14,9 +14,6 @@ Follow the instructions [here](https://chocolatey.org/install) to install the Ch
 choco install -y --version 0.1.0 kensaku
 ```
 
-> [!NOTE]
-> The Chocolatey package is currently being reviewed by moderators. If you want to install it before the package is approved, you need to explicitly specify the version number with `--version 0.1.0`.
-
 ### Debian
 
 Follow the instructions [here](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian?tabs=dotnet9) to install the .NET 9 runtime. Then run the following commands:
