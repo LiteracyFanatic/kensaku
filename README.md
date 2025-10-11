@@ -63,6 +63,11 @@ noun (common) (futsuumeishi), noun or participle which takes the aux. verb suru,
 1. looking up (e.g. a word in a dictionary); search (e.g. on the Internet); retrieval (of information); reference
 ```
 
+You can also search for words by reading or meaning instead of passing a literal word:
+
+- `kensaku word --reading けんさく`
+- `kensaku word --meaning "search"`
+
 This is a relatively short one, but many entries will have multiple meanings with notes, cross-references, and other forms of the word using different kanji. Speaking of kanji, let's see what kensaku can tell us about `賀`: `kensaku kanji 賀`.
 
 ```bash
@@ -119,9 +124,21 @@ Another problem that you may run in to is that many radicals are actually compos
 
 Sometimes it can be hard to tell exactly how many strokes a kanji has. In these cases, you can tell kensaku to be a bit more forgiving by using the `--include-stroke-miscounts` flag. Or you can specify a range using `--min-strokes` and `--max-strokes`.
 
-If you happen to know the reading or meaning you can use the corresponding flags to filter the results as well. The `--common-only` flag will limit the search to only the 2,500 most common kanji. For those familiar with more traditional methods of kanji lookup, SKIP, SH, Four Corner, and De Roo codes are also supported.
+If you happen to know the reading or meaning you can use the corresponding flags to filter the results as well. The `--common-only` flag will limit the search to only the 2,500 most common kanji. For those familiar with more traditional methods of kanji lookup, SKIP, SH, Four Corner, and De Roo codes are also supported. For example: `kensaku kanji --skip-code 2-5-7`. You can also search by the “key radical” using either the Kangxi (classical) or Nelson systems. These accept a radical number, literal, or meaning. For example:
 
-One last useful trick is to use the `--pattern` flag to "fill in the blank" when you come across a word with a single unknown kanji. For example, if you come across the word `祝賀`, and know how to type `祝` but not `賀`, you can search for it using `kensaku kanji --radicals power shellfish --pattern 祝_`
+- `kensaku kanji --kangxi 85`
+- `kensaku kanji --nelson 水`
+- `kensaku kanji --nelson water`
+
+A useful trick is to use the `--pattern` flag to "fill in the blank" when you come across a word with a single unknown kanji. For example, if you come across the word `祝賀`, and know how to type `祝` but not `賀`, you can search for it using `kensaku kanji --radicals power shellfish --pattern 祝_`.
+
+You can search radicals directly as well. For example:
+
+- `kensaku radical --number 115`
+- `kensaku radical --meaning grain`
+- `kensaku radical --name のぎ`
+
+Stroke counts and ranges are supported for radicals too: `kensaku radical --min-strokes 3 --max-strokes 4`.
 
 ## Programmatic Usage
 
@@ -155,4 +172,4 @@ kensaku uses the CJKRadicals.txt, DerivedName.txt, and EquivalentUnifiedIdeograp
 
 kensaku uses the JMdict, Kanjidic2, JMnedict, and Radkfile dictionary files. These files are the property of the Electronic Dictionary Research and Development Group (https://www.edrdg.org/), and are used in conformance with the Group's licence (https://www.edrdg.org/edrdg/licence.html).
 
-See [NugetLicenses.txt](src/CLI/NugetLicenses.txt) for a list of NuGet packages used by the CLI tool and their licenses.
+See [NugetLicenses.txt](src/Kensaku.CLI/NugetLicenses.txt) for a list of NuGet packages used by the CLI tool and their licenses.
