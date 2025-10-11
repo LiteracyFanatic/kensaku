@@ -13,6 +13,8 @@ module WordCommand =
 
     type WordArgs =
         | [<MainCommand; Last>] Word of string
+        | Reading of string
+        | Meaning of string
         | Format of Format
         | No_Pager
 
@@ -20,12 +22,16 @@ module WordCommand =
             member this.Usage =
                 match this with
                 | Word _ -> "show info for the given word"
+                | Reading _ -> "search for words with the given reading"
+                | Meaning _ -> "search for words with a meaning that matches the given regular expression"
                 | Format _ -> "output format"
                 | No_Pager -> "do not use a pager"
 
     let isSearchOption (arg: WordArgs) =
         match arg with
-        | Word _ -> true
+        | Word _
+        | Reading _
+        | Meaning _
         | Format _
         | No_Pager -> false
 
@@ -58,7 +64,16 @@ module WordCommand =
                 |> Async.AwaitTask
                 |> Async.RunSynchronously
                 |> Seq.toList
-            | None -> raise (NotImplementedException())
+            | None ->
+                let query : GetWordsQuery = {
+                    Reading = args.TryGetResult Reading
+                    Meaning = args.TryGetResult Meaning
+                }
+
+                getWordsAsync query ctx
+                |> Async.AwaitTask
+                |> Async.RunSynchronously
+                |> Seq.toList
 
         match words with
         | [] -> ()

@@ -74,6 +74,11 @@ module Words =
             Alternate = (kanjiReadingPairs.Tail @ falseEntries)
         }
 
+    type GetWordsQuery = {
+        Reading: string option
+        Meaning: string option
+    }
+
     let private getIdsForWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
         ctx.QueryAsync<int>(
             sql
@@ -484,6 +489,31 @@ module Words =
                         }
                     })
                 |> Task.WhenAll
+        }
+
+    let private getIdsForWordsAsync (query: GetWordsQuery) (ctx: KensakuConnection) =
+        ctx.QueryAsync<int>(
+            sql
+                """
+            select distinct e.Id
+            from Entries as e
+            left join KanjiElements as ke on ke.EntryId = e.Id
+            left join ReadingElements as re on re.EntryId = e.Id
+            left join Senses as s on s.EntryId = e.Id
+            left join Glosses as g on g.SenseId = s.Id and g.Language = 'eng'
+            left join Translations as t on t.EntryId = e.Id
+            left join TranslationContents as tc on tc.TranslationId = t.Id
+            where true
+            and (@Reading is null or re.Value = @Reading)
+            and (@Meaning is null or (g.Value regexp @Meaning or tc.Value regexp @Meaning))
+            order by e.Id""",
+            {| Reading = query.Reading; Meaning = query.Meaning |}
+        )
+
+    let getWordsAsync (query: GetWordsQuery) (ctx: KensakuConnection) =
+        task {
+            let! ids = getIdsForWordsAsync query ctx
+            return! getWordsByIdsAsync ids ctx
         }
 
     let getWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
