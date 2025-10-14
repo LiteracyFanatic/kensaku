@@ -7,6 +7,9 @@ module Words =
 
     open Kensaku.Core.Domain
 
+    /// <summary>
+    /// Represents the result of a word query including kanji, readings, senses, and translations.
+    /// </summary>
     type GetWordQueryResult = {
         Id: int
         KanjiElements: KanjiElement list
@@ -15,6 +18,9 @@ module Words =
         Translations: Translation list
     }
 
+    /// <summary>
+    /// Represents a labeled form of a word entry (kanji and/or reading).
+    /// </summary>
     type EntryLabel = {
         Kanji: string option
         Reading: string
@@ -25,6 +31,9 @@ module Words =
             |> Option.map (fun k -> $"%s{k} 【{this.Reading}】")
             |> Option.defaultValue this.Reading
 
+    /// <summary>
+    /// Represents the primary and alternate forms of a word entry.
+    /// </summary>
     type WordForms = {
         Primary: EntryLabel
         Alternate: EntryLabel seq
@@ -34,6 +43,11 @@ module Words =
         readings
         |> List.filter (fun re -> re.Restrictions.IsEmpty || List.contains kanji.Value re.Restrictions)
 
+    /// <summary>
+    /// Extracts the primary and alternate forms from a word query result.
+    /// </summary>
+    /// <param name="word">The word query result.</param>
+    /// <returns>The primary and alternate forms of the word.</returns>
     let getWordForms (word: GetWordQueryResult) =
         let trueReadings =
             word.ReadingElements
@@ -74,6 +88,9 @@ module Words =
             Alternate = (kanjiReadingPairs.Tail @ falseEntries)
         }
 
+    /// <summary>
+    /// Represents a query for searching dictionary words.
+    /// </summary>
     type GetWordsQuery = {
         Reading: string option
         Meaning: string option
@@ -510,12 +527,24 @@ module Words =
             {| Reading = query.Reading; Meaning = query.Meaning |}
         )
 
+    /// <summary>
+    /// Queries dictionary words based on reading or meaning.
+    /// </summary>
+    /// <param name="query">The search query parameters.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of matching word query results.</returns>
     let getWordsAsync (query: GetWordsQuery) (ctx: KensakuConnection) =
         task {
             let! ids = getIdsForWordsAsync query ctx
             return! getWordsByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves word entries that match a specific literal (kanji or reading).
+    /// </summary>
+    /// <param name="word">The exact word literal to search for.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of matching word query results.</returns>
     let getWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
         task {
             let! ids = getIdsForWordLiteralsAsync word ctx

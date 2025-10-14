@@ -7,6 +7,9 @@ open Microsoft.Data.Sqlite
 
 open Kensaku.Core.TypeHandlers
 
+/// <summary>
+/// Represents a connection to a Kensaku SQLite database with custom type handlers and functions.
+/// </summary>
 type KensakuConnection(connectionString: string) as this =
     inherit SqliteConnection(connectionString)
 

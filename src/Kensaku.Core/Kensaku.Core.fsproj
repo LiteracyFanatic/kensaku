@@ -1,7 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net7.0;net8.0;net9.0</TargetFrameworks>
     <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Deterministic>true</Deterministic>
+    <RepositoryUrl>https://github.com/LiteracyFanatic/kensaku</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <PackageId>Kensaku.Core</PackageId>
+    <Title>Kensaku.Core</Title>
+    <Authors>Jordan Cannon</Authors>
+    <Description>Query interface for the Kensaku Japanese dictionary database. Provides APIs for searching kanji, words, and radicals with strongly-typed query builders.</Description>
+    <PackageTags>Japanese;JMdict;JMnedict;Kanjidic2;Kanji;Dictionary;Database;FSharp</PackageTags>
+    <PackageProjectUrl>https://github.com/LiteracyFanatic/kensaku</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <Version>0.1.0-preview.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Utilities.fs" />
@@ -12,6 +28,9 @@
     <Compile Include="Kanji.fs" />
     <Compile Include="Radicals.fs" />
     <Compile Include="Words.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />

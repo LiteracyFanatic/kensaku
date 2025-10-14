@@ -5,6 +5,9 @@ module Kanji =
 
     open Dapper
 
+    /// <summary>
+    /// Represents the key radical numbering system.
+    /// </summary>
     type KeyRadicalSystem =
         | Classical
         | Nelson
@@ -14,16 +17,25 @@ module Kanji =
             | Classical -> "classical"
             | Nelson -> "nelson_c"
 
+    /// <summary>
+    /// Represents a way to select a key radical.
+    /// </summary>
     type KeyRadicalSelector =
         | Number of int
         | Literal of Rune
         | Meaning of string
 
+    /// <summary>
+    /// Represents a query for selecting a key radical.
+    /// </summary>
     type KeyRadicalQuery = {
         System: KeyRadicalSystem
         Selector: KeyRadicalSelector
     }
 
+    /// <summary>
+    /// Represents a character code type used for kanji lookup.
+    /// </summary>
     type CharacterCode =
         | SkipCode of string
         | ShDescCode of string
@@ -37,6 +49,9 @@ module Kanji =
             | FourCornerCode c -> c
             | DeRooCode c -> c
 
+    /// <summary>
+    /// Represents a query for searching kanji characters.
+    /// </summary>
     type GetKanjiQuery = {
         MinStrokeCount: int option
         MaxStrokeCount: int option
@@ -52,6 +67,9 @@ module Kanji =
         KeyRadical: KeyRadicalQuery option
     }
 
+    /// <summary>
+    /// Represents query parameters for kanji search (internal representation).
+    /// </summary>
     type GetKanjiQueryParams = {
         MinStrokeCount: int option
         MaxStrokeCount: int option
@@ -99,6 +117,9 @@ module Kanji =
                     | _ -> None)
         }
 
+    /// <summary>
+    /// Represents a SKIP code misclassification with correction information.
+    /// </summary>
     type SkipMisclassification =
         | Position of string
         | StrokeCount of string
@@ -114,6 +135,9 @@ module Kanji =
             | _ -> failwith $"Invalid SKIP misclassification type: %s{misclassificationType}"
 
     [<CLIMutable>]
+    /// <summary>
+    /// Represents a variant form of a character with associated metadata.
+    /// </summary>
     type CharacterVariant = {
         CharacterId: int
         Type: string
@@ -121,6 +145,9 @@ module Kanji =
         Character: Rune option
     }
 
+    /// <summary>
+    /// Represents a key radical value with its number, visual forms, and meanings.
+    /// </summary>
     type KeyRadicalValue = {
         Number: int
         Values: Rune list
@@ -128,6 +155,9 @@ module Kanji =
         Type: string
     }
 
+    /// <summary>
+    /// Represents the result of a kanji query including readings, meanings, and metadata.
+    /// </summary>
     type GetKanjiQueryResult = {
         Value: Rune
         Grade: int option
@@ -592,17 +622,34 @@ module Kanji =
                     })
         }
 
+    /// <summary>
+    /// Queries kanji characters based on search criteria.
+    /// </summary>
+    /// <param name="query">The search query parameters.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of matching kanji query results.</returns>
     let getKanjiAsync (query: GetKanjiQuery) (ctx: KensakuConnection) =
         task {
             let! ids = getKanjiIdsAsync query ctx
             return! getKanjiByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves kanji information for specific character literals.
+    /// </summary>
+    /// <param name="kanji">The list of kanji characters to retrieve.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of kanji query results.</returns>
     let getKanjiLiteralsAsync (kanji: Rune list) (ctx: KensakuConnection) =
         task {
             let! ids = getIdsForKanjiLiteralsAsync kanji ctx
             return! getKanjiByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves all radical names from the database.
+    /// </summary>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of radical names.</returns>
     let getRadicalNamesAsync (ctx: KensakuConnection) =
         ctx.QueryAsync<string>(sql "select rm.Value from RadicalMeanings as rm")
