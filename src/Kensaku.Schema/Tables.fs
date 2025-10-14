@@ -1,4 +1,4 @@
-namespace Kensaku.Core.Tables
+namespace Kensaku.Schema
 
 open System
 open System.Text

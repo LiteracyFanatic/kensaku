@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net7.0;net8.0;net9.0</TargetFrameworks>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Deterministic>true</Deterministic>
+    <RepositoryUrl>https://github.com/LiteracyFanatic/kensaku</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <PackageId>Kensaku.Schema</PackageId>
+    <Title>Kensaku.Schema</Title>
+    <Authors>Jordan Cannon</Authors>
+    <Description>Internal database schema types for Kensaku. This is an implementation detail and the API is unstable. Only use this if you are developing Kensaku itself.</Description>
+    <PackageTags>Japanese;Kensaku;Database;Schema;Internal;FSharp</PackageTags>
+    <PackageProjectUrl>https://github.com/LiteracyFanatic/kensaku</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <Version>0.1.0-preview.1</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Tables.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

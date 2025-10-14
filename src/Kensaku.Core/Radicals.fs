@@ -5,6 +5,11 @@ module Radicals =
 
     open Dapper
 
+    open Kensaku.Core.Utilities
+
+    /// <summary>
+    /// Represents a query for searching radicals.
+    /// </summary>
     type GetRadicalQuery = {
         RadicalNumber: int option
         RadicalName: string option
@@ -13,6 +18,9 @@ module Radicals =
         MaxStrokeCount: int option
     }
 
+    /// <summary>
+    /// Represents the result of a radical query including values, meanings, and associated kanji count.
+    /// </summary>
     type RadicalQueryResult = {
         Id: int
         Number: int option
@@ -81,11 +89,11 @@ module Radicals =
             else
                 let param = {| Ids = ids |}
 
-                let! radicals = ctx.QueryAsync<Tables.Radical>(sql "select * from Radicals where Id in @Ids", param)
+                let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals where Id in @Ids", param)
                 let radicalsById = radicals |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
                 let! radicalValues =
-                    ctx.QueryAsync<Tables.RadicalValue>(
+                    ctx.QueryAsync<Kensaku.Schema.RadicalValue>(
                         sql "select * from RadicalValues where RadicalId in @Ids",
                         param
                     )
@@ -93,7 +101,7 @@ module Radicals =
                 let radicalValuesByRadicalId = radicalValues |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
                 let! radicalMeanings =
-                    ctx.QueryAsync<Tables.RadicalMeaning>(
+                    ctx.QueryAsync<Kensaku.Schema.RadicalMeaning>(
                         sql "select * from RadicalMeanings where RadicalId in @Ids",
                         param
                     )
@@ -156,12 +164,24 @@ module Radicals =
                         })
         }
 
+    /// <summary>
+    /// Queries radicals based on search criteria.
+    /// </summary>
+    /// <param name="query">The search query parameters.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of matching radical query results.</returns>
     let getRadicalsAsync (query: GetRadicalQuery) (ctx: KensakuConnection) =
         task {
             let! ids = getRadicalIdsAsync query ctx
             return! getRadicalsByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves radical information for specific radical literals.
+    /// </summary>
+    /// <param name="radicals">The list of radical characters to retrieve.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of radical query results.</returns>
     let getRadicalLiteralsAsync (radicals: Rune list) (ctx: KensakuConnection) =
         task {
             let! ids =

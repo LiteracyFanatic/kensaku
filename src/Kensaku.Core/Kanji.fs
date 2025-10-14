@@ -5,6 +5,11 @@ module Kanji =
 
     open Dapper
 
+    open Kensaku.Core.Utilities
+
+    /// <summary>
+    /// Represents the key radical numbering system.
+    /// </summary>
     type KeyRadicalSystem =
         | Classical
         | Nelson
@@ -14,16 +19,25 @@ module Kanji =
             | Classical -> "classical"
             | Nelson -> "nelson_c"
 
+    /// <summary>
+    /// Represents a way to select a key radical.
+    /// </summary>
     type KeyRadicalSelector =
         | Number of int
         | Literal of Rune
         | Meaning of string
 
+    /// <summary>
+    /// Represents a query for selecting a key radical.
+    /// </summary>
     type KeyRadicalQuery = {
         System: KeyRadicalSystem
         Selector: KeyRadicalSelector
     }
 
+    /// <summary>
+    /// Represents a character code type used for kanji lookup.
+    /// </summary>
     type CharacterCode =
         | SkipCode of string
         | ShDescCode of string
@@ -37,6 +51,9 @@ module Kanji =
             | FourCornerCode c -> c
             | DeRooCode c -> c
 
+    /// <summary>
+    /// Represents a query for searching kanji characters.
+    /// </summary>
     type GetKanjiQuery = {
         MinStrokeCount: int option
         MaxStrokeCount: int option
@@ -52,6 +69,9 @@ module Kanji =
         KeyRadical: KeyRadicalQuery option
     }
 
+    /// <summary>
+    /// Represents query parameters for kanji search (internal representation).
+    /// </summary>
     type GetKanjiQueryParams = {
         MinStrokeCount: int option
         MaxStrokeCount: int option
@@ -99,6 +119,9 @@ module Kanji =
                     | _ -> None)
         }
 
+    /// <summary>
+    /// Represents a SKIP code misclassification with correction information.
+    /// </summary>
     type SkipMisclassification =
         | Position of string
         | StrokeCount of string
@@ -113,6 +136,9 @@ module Kanji =
             | "stroke_diff" -> StrokeDifference skipCode
             | _ -> failwith $"Invalid SKIP misclassification type: %s{misclassificationType}"
 
+    /// <summary>
+    /// Represents a variant form of a character with associated metadata.
+    /// </summary>
     [<CLIMutable>]
     type CharacterVariant = {
         CharacterId: int
@@ -121,6 +147,9 @@ module Kanji =
         Character: Rune option
     }
 
+    /// <summary>
+    /// Represents a key radical value with its number, visual forms, and meanings.
+    /// </summary>
     type KeyRadicalValue = {
         Number: int
         Values: Rune list
@@ -128,6 +157,19 @@ module Kanji =
         Type: string
     }
 
+    /// <summary>
+    /// Represents a dictionary reference for a character.
+    /// </summary>
+    type DictionaryReference = {
+        IndexNumber: string
+        Type: string
+        Volume: int option
+        Page: int option
+    }
+
+    /// <summary>
+    /// Represents the result of a kanji query including readings, meanings, and metadata.
+    /// </summary>
     type GetKanjiQueryResult = {
         Value: Rune
         Grade: int option
@@ -150,7 +192,7 @@ module Kanji =
             Kangxi: KeyRadicalValue
             Nelson: KeyRadicalValue option
         |}
-        DictionaryReferences: Tables.CharacterDictionaryReference list
+        DictionaryReferences: DictionaryReference list
         Variants: CharacterVariant list
         CodePoints: {|
             Ucs: string
@@ -310,11 +352,11 @@ module Kanji =
         task {
             let param = {| Ids = ids |}
 
-            let! characters = ctx.QueryAsync<Tables.Character>(sql "select * from Characters where Id in @Ids", param)
+            let! characters = ctx.QueryAsync<Kensaku.Schema.Character>(sql "select * from Characters where Id in @Ids", param)
             let charactersById = characters |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
             let! characterQueryCodes =
-                ctx.QueryAsync<Tables.CharacterQueryCode>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterQueryCode>(
                     sql "select * from CharacterQueryCodes where CharacterId in @Ids",
                     param
                 )
@@ -323,7 +365,7 @@ module Kanji =
                 characterQueryCodes |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! strokeMiscounts =
-                ctx.QueryAsync<Tables.StrokeMiscount>(
+                ctx.QueryAsync<Kensaku.Schema.StrokeMiscount>(
                     sql "select * from StrokeMiscounts where CharacterId in @Ids",
                     param
                 )
@@ -332,7 +374,7 @@ module Kanji =
                 strokeMiscounts |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! characterReadings =
-                ctx.QueryAsync<Tables.CharacterReading>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterReading>(
                     sql "select * from CharacterReadings where CharacterId in @Ids",
                     param
                 )
@@ -340,21 +382,21 @@ module Kanji =
             let characterReadingsByCharacterId =
                 characterReadings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-            let! nanori = ctx.QueryAsync<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
+            let! nanori = ctx.QueryAsync<Kensaku.Schema.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
             let nanoriByCharacterId = nanori |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-            let! radicals = ctx.QueryAsync<Tables.Radical>(sql "select * from Radicals")
+            let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals")
 
-            let! radicalValues = ctx.QueryAsync<Tables.RadicalValue>(sql "select * from RadicalValues")
+            let! radicalValues = ctx.QueryAsync<Kensaku.Schema.RadicalValue>(sql "select * from RadicalValues")
             let radicalValuesByRadicalId = radicalValues |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
-            let! radicalMeanings = ctx.QueryAsync<Tables.RadicalMeaning>(sql "select * from RadicalMeanings")
+            let! radicalMeanings = ctx.QueryAsync<Kensaku.Schema.RadicalMeaning>(sql "select * from RadicalMeanings")
 
             let radicalMeaningsByRadicalId =
                 radicalMeanings |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
             let! keyRadicals =
-                ctx.QueryAsync<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
 
             let keyRadicalsByCharacterId =
                 keyRadicals
@@ -387,7 +429,7 @@ module Kanji =
                         }))
 
             let! characterMeanings =
-                ctx.QueryAsync<Tables.CharacterMeaning>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterMeaning>(
                     sql "select * from CharacterMeanings where CharacterId in @Ids and Language = 'en'",
                     param
                 )
@@ -396,7 +438,7 @@ module Kanji =
                 characterMeanings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! characterDictionaryReferences =
-                ctx.QueryAsync<Tables.CharacterDictionaryReference>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterDictionaryReference>(
                     sql "select * from CharacterDictionaryReferences where CharacterId in @Ids",
                     param
                 )
@@ -420,7 +462,7 @@ module Kanji =
                 characterVariants |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! codepoints =
-                ctx.QueryAsync<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
 
             let codepointsByCharacterId = codepoints |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
@@ -546,6 +588,12 @@ module Kanji =
                             characterDictionaryReferencesByCharacterId
                             |> Map.tryFind id
                             |> Option.defaultValue []
+                            |> Seq.map (fun dr -> {
+                                IndexNumber = dr.IndexNumber
+                                Type = dr.Type
+                                Volume = dr.Volume
+                                Page = dr.Page
+                            })
                             |> Seq.toList
                         Variants =
                             characterVariantsByCharacterId
@@ -592,17 +640,34 @@ module Kanji =
                     })
         }
 
+    /// <summary>
+    /// Queries kanji characters based on search criteria.
+    /// </summary>
+    /// <param name="query">The search query parameters.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of matching kanji query results.</returns>
     let getKanjiAsync (query: GetKanjiQuery) (ctx: KensakuConnection) =
         task {
             let! ids = getKanjiIdsAsync query ctx
             return! getKanjiByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves kanji information for specific character literals.
+    /// </summary>
+    /// <param name="kanji">The list of kanji characters to retrieve.</param>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of kanji query results.</returns>
     let getKanjiLiteralsAsync (kanji: Rune list) (ctx: KensakuConnection) =
         task {
             let! ids = getIdsForKanjiLiteralsAsync kanji ctx
             return! getKanjiByIdsAsync ids ctx
         }
 
+    /// <summary>
+    /// Retrieves all radical names from the database.
+    /// </summary>
+    /// <param name="ctx">The database connection.</param>
+    /// <returns>A task that returns a sequence of radical names.</returns>
     let getRadicalNamesAsync (ctx: KensakuConnection) =
         ctx.QueryAsync<string>(sql "select rm.Value from RadicalMeanings as rm")

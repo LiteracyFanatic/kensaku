@@ -12,6 +12,7 @@ module KanjiCommand =
     open Kensaku.CLI.Formatting
     open Kensaku.Core
     open Kensaku.Core.Kanji
+    open Kensaku.Core.Utilities
 
     type KanjiArgs =
         | Strokes of int

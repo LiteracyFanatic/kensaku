@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Kensaku.DataSources\Kensaku.DataSources.fsproj" />
     <ProjectReference Include="..\Kensaku.Core\Kensaku.Core.fsproj" />
+    <ProjectReference Include="..\Kensaku.Schema\Kensaku.Schema.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.2" />

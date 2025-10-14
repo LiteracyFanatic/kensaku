@@ -5,7 +5,7 @@ open System.Text
 
 open Dapper
 
-open Kensaku.Core
+open Kensaku.Core.Utilities
 
 type internal OptionHandler<'T>() =
     inherit SqlMapper.TypeHandler<option<'T>>()
