@@ -5,6 +5,8 @@ module Radicals =
 
     open Dapper
 
+    open Kensaku.Core.Utilities
+
     /// <summary>
     /// Represents a query for searching radicals.
     /// </summary>

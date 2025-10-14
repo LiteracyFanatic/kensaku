@@ -2,7 +2,6 @@ namespace Kensaku.Core
 
 open System.Text
 
-[<AutoOpen>]
 module Utilities =
     let internal sql (input: string) = input
 

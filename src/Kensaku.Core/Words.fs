@@ -6,6 +6,7 @@ module Words =
     open Dapper
 
     open Kensaku.Core.Domain
+    open Kensaku.Core.Utilities
 
     /// <summary>
     /// Represents the result of a word query including kanji, readings, senses, and translations.

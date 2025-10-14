@@ -14,6 +14,7 @@ module Formatting =
     open Kensaku.Core.Domain
     open Kensaku.Core.Kanji
     open Kensaku.Core.Words
+    open Kensaku.Core.Utilities
 
     type Format =
         | Text

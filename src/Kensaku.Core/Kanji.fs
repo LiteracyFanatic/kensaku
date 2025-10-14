@@ -5,6 +5,8 @@ module Kanji =
 
     open Dapper
 
+    open Kensaku.Core.Utilities
+
     /// <summary>
     /// Represents the key radical numbering system.
     /// </summary>
@@ -156,6 +158,16 @@ module Kanji =
     }
 
     /// <summary>
+    /// Represents a dictionary reference for a character.
+    /// </summary>
+    type DictionaryReference = {
+        IndexNumber: string
+        Type: string
+        Volume: int option
+        Page: int option
+    }
+
+    /// <summary>
     /// Represents the result of a kanji query including readings, meanings, and metadata.
     /// </summary>
     type GetKanjiQueryResult = {
@@ -180,7 +192,7 @@ module Kanji =
             Kangxi: KeyRadicalValue
             Nelson: KeyRadicalValue option
         |}
-        DictionaryReferences: Tables.CharacterDictionaryReference list
+        DictionaryReferences: DictionaryReference list
         Variants: CharacterVariant list
         CodePoints: {|
             Ucs: string
@@ -576,6 +588,12 @@ module Kanji =
                             characterDictionaryReferencesByCharacterId
                             |> Map.tryFind id
                             |> Option.defaultValue []
+                            |> Seq.map (fun dr -> {
+                                IndexNumber = dr.IndexNumber
+                                Type = dr.Type
+                                Volume = dr.Volume
+                                Page = dr.Page
+                            })
                             |> Seq.toList
                         Variants =
                             characterVariantsByCharacterId

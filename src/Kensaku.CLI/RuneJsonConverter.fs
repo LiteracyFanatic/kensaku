@@ -6,6 +6,7 @@ open System.Text.Json
 open System.Text.Json.Serialization
 
 open Kensaku.Core
+open Kensaku.Core.Utilities
 
 type RuneJsonConverter() =
     inherit JsonConverter<Rune>()

@@ -20,6 +20,7 @@
     <Version>0.1.0-preview.1</Version>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Tables.fs" />

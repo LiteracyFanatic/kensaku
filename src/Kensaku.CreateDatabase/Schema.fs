@@ -9,6 +9,7 @@ module Schema =
 
     open Kensaku
     open Kensaku.Core
+    open Kensaku.Core.Utilities
 
     let sql (input: string) = input
 
