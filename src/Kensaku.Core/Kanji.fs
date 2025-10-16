@@ -352,11 +352,11 @@ module Kanji =
         task {
             let param = {| Ids = ids |}
 
-            let! characters = ctx.QueryAsync<Tables.Character>(sql "select * from Characters where Id in @Ids", param)
+            let! characters = ctx.QueryAsync<Kensaku.Schema.Character>(sql "select * from Characters where Id in @Ids", param)
             let charactersById = characters |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
             let! characterQueryCodes =
-                ctx.QueryAsync<Tables.CharacterQueryCode>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterQueryCode>(
                     sql "select * from CharacterQueryCodes where CharacterId in @Ids",
                     param
                 )
@@ -365,7 +365,7 @@ module Kanji =
                 characterQueryCodes |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! strokeMiscounts =
-                ctx.QueryAsync<Tables.StrokeMiscount>(
+                ctx.QueryAsync<Kensaku.Schema.StrokeMiscount>(
                     sql "select * from StrokeMiscounts where CharacterId in @Ids",
                     param
                 )
@@ -374,7 +374,7 @@ module Kanji =
                 strokeMiscounts |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! characterReadings =
-                ctx.QueryAsync<Tables.CharacterReading>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterReading>(
                     sql "select * from CharacterReadings where CharacterId in @Ids",
                     param
                 )
@@ -382,21 +382,21 @@ module Kanji =
             let characterReadingsByCharacterId =
                 characterReadings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-            let! nanori = ctx.QueryAsync<Tables.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
+            let! nanori = ctx.QueryAsync<Kensaku.Schema.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
             let nanoriByCharacterId = nanori |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-            let! radicals = ctx.QueryAsync<Tables.Radical>(sql "select * from Radicals")
+            let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals")
 
-            let! radicalValues = ctx.QueryAsync<Tables.RadicalValue>(sql "select * from RadicalValues")
+            let! radicalValues = ctx.QueryAsync<Kensaku.Schema.RadicalValue>(sql "select * from RadicalValues")
             let radicalValuesByRadicalId = radicalValues |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
-            let! radicalMeanings = ctx.QueryAsync<Tables.RadicalMeaning>(sql "select * from RadicalMeanings")
+            let! radicalMeanings = ctx.QueryAsync<Kensaku.Schema.RadicalMeaning>(sql "select * from RadicalMeanings")
 
             let radicalMeaningsByRadicalId =
                 radicalMeanings |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
             let! keyRadicals =
-                ctx.QueryAsync<Tables.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
 
             let keyRadicalsByCharacterId =
                 keyRadicals
@@ -429,7 +429,7 @@ module Kanji =
                         }))
 
             let! characterMeanings =
-                ctx.QueryAsync<Tables.CharacterMeaning>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterMeaning>(
                     sql "select * from CharacterMeanings where CharacterId in @Ids and Language = 'en'",
                     param
                 )
@@ -438,7 +438,7 @@ module Kanji =
                 characterMeanings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! characterDictionaryReferences =
-                ctx.QueryAsync<Tables.CharacterDictionaryReference>(
+                ctx.QueryAsync<Kensaku.Schema.CharacterDictionaryReference>(
                     sql "select * from CharacterDictionaryReferences where CharacterId in @Ids",
                     param
                 )
@@ -462,7 +462,7 @@ module Kanji =
                 characterVariants |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! codepoints =
-                ctx.QueryAsync<Tables.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
 
             let codepointsByCharacterId = codepoints |> Seq.groupBy _.CharacterId |> Map.ofSeq
 

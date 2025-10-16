@@ -1,15 +1,15 @@
-namespace Kensaku.Core.Tables
+namespace Kensaku.Schema
 
 open System
 open System.Text
 
 [<CLIMutable>]
-type internal Entry = {
+type Entry = {
     Id: int
 }
 
 [<CLIMutable>]
-type internal SenseCrossReference = {
+type SenseCrossReference = {
     SenseId: int
     ReferenceKanjiElement: string option
     ReferenceReadingElement: string option
@@ -17,56 +17,56 @@ type internal SenseCrossReference = {
 }
 
 [<CLIMutable>]
-type internal Field = {
+type Field = {
     SenseId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal PartOfSpeech = {
+type PartOfSpeech = {
     SenseId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal Dialect = {
+type Dialect = {
     SenseId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal SenseInformation = {
+type SenseInformation = {
     SenseId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal KanjiElementInformation = {
+type KanjiElementInformation = {
     KanjiElementId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal KanjiElementPriority = {
+type KanjiElementPriority = {
     KanjiElementId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal ReadingElementPriority = {
+type ReadingElementPriority = {
     ReadingElementId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal KanjiElement = {
+type KanjiElement = {
     Id: int
     EntryId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal ReadingElement = {
+type ReadingElement = {
     Id: int
     EntryId: int
     Value: string
@@ -74,43 +74,43 @@ type internal ReadingElement = {
 }
 
 [<CLIMutable>]
-type internal ReadingElementInformation = {
+type ReadingElementInformation = {
     ReadingElementId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal Sense = {
+type Sense = {
     Id: int
     EntryId: int
 }
 
 [<CLIMutable>]
-type internal SenseKanjiElementRestriction = {
+type SenseKanjiElementRestriction = {
     SenseId: int
     KanjiElement: string
 }
 
 [<CLIMutable>]
-type internal ReadingElementRestriction = {
+type ReadingElementRestriction = {
     ReadingElementId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal SenseReadingElementRestriction = {
+type SenseReadingElementRestriction = {
     SenseId: int
     ReadingElement: string
 }
 
 [<CLIMutable>]
-type internal MiscellaneousInformation = {
+type MiscellaneousInformation = {
     SenseId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal LanguageSource = {
+type LanguageSource = {
     SenseId: int
     Value: string
     LanguageCode: string
@@ -119,7 +119,7 @@ type internal LanguageSource = {
 }
 
 [<CLIMutable>]
-type internal Gloss = {
+type Gloss = {
     SenseId: int
     Value: string
     Language: string
@@ -127,26 +127,26 @@ type internal Gloss = {
 }
 
 [<CLIMutable>]
-type internal Antonym = {
+type Antonym = {
     SenseId: int
     ReferenceKanjiElement: string option
     ReferenceReadingElement: string option
 }
 
 [<CLIMutable>]
-type internal Translation = {
+type Translation = {
     Id: int
     EntryId: int
 }
 
 [<CLIMutable>]
-type internal NameType = {
+type NameType = {
     TranslationId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal TranslationCrossReference = {
+type TranslationCrossReference = {
     TranslationId: int
     ReferenceKanjiElement: string option
     ReferenceReadingElement: string option
@@ -154,27 +154,27 @@ type internal TranslationCrossReference = {
 }
 
 [<CLIMutable>]
-type internal TranslationContent = {
+type TranslationContent = {
     TranslationId: int
     Value: string
     Language: string
 }
 
 [<CLIMutable>]
-type internal Kanjidic2Info = {
+type Kanjidic2Info = {
     FileVersion: int
     DatabaseVersion: string
     DateOfCreation: DateTime
 }
 
 [<CLIMutable>]
-type internal StrokeMiscount = {
+type StrokeMiscount = {
     CharacterId: int
     Value: int
 }
 
 [<CLIMutable>]
-type internal Character = {
+type Character = {
     Id: int
     Value: Rune
     Grade: int option
@@ -185,34 +185,34 @@ type internal Character = {
 }
 
 [<CLIMutable>]
-type internal Codepoint = {
+type Codepoint = {
     CharacterId: int
     Value: string
     Type: string
 }
 
 [<CLIMutable>]
-type internal KeyRadical = {
+type KeyRadical = {
     CharacterId: int
     Value: int
     Type: string
 }
 
 [<CLIMutable>]
-type internal CharacterVariant = {
+type CharacterVariant = {
     CharacterId: int
     Value: string
     Type: string
 }
 
 [<CLIMutable>]
-type internal RadicalName = {
+type RadicalName = {
     CharacterId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal CharacterDictionaryReference = {
+type CharacterDictionaryReference = {
     CharacterId: int
     IndexNumber: string
     Type: string
@@ -221,7 +221,7 @@ type internal CharacterDictionaryReference = {
 }
 
 [<CLIMutable>]
-type internal CharacterQueryCode = {
+type CharacterQueryCode = {
     CharacterId: int
     Value: string
     Type: string
@@ -229,48 +229,48 @@ type internal CharacterQueryCode = {
 }
 
 [<CLIMutable>]
-type internal CharacterReading = {
+type CharacterReading = {
     CharacterId: int
     Value: string
     Type: string
 }
 
 [<CLIMutable>]
-type internal CharacterMeaning = {
+type CharacterMeaning = {
     CharacterId: int
     Value: string
     Language: string
 }
 
 [<CLIMutable>]
-type internal Nanori = {
+type Nanori = {
     CharacterId: int
     Value: string
 }
 
 [<CLIMutable>]
-type internal Radical = {
+type Radical = {
     Id: int
     Number: int option
     StrokeCount: int
 }
 
 [<CLIMutable>]
-type internal RadicalValue = {
+type RadicalValue = {
     RadicalId: int
     Value: Rune
     Type: string
 }
 
 [<CLIMutable>]
-type internal RadicalMeaning = {
+type RadicalMeaning = {
     RadicalId: int
     Value: string
     Type: string
 }
 
 [<CLIMutable>]
-type internal Characters_Radical = {
+type Characters_Radical = {
     CharacterId: int
     RadicalId: int
 }

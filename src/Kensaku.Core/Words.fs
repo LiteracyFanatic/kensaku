@@ -116,7 +116,7 @@ module Words =
     let private getKanjiElementsAsync (entryId: int) (ctx: KensakuConnection) =
         task {
             let! kanjiElements =
-                ctx.QueryAsync<Tables.KanjiElement>(
+                ctx.QueryAsync<Kensaku.Schema.KanjiElement>(
                     sql
                         """
                 select ke.*
@@ -162,7 +162,7 @@ module Words =
     let private getReadingElementsAsync (entryId: int) (ctx: KensakuConnection) =
         task {
             let! readingElements =
-                ctx.QueryAsync<Tables.ReadingElement>(
+                ctx.QueryAsync<Kensaku.Schema.ReadingElement>(
                     sql
                         """
                 select re.*
@@ -250,7 +250,7 @@ module Words =
     let private getCrossReferencesAsync (senseId: int) (ctx: KensakuConnection) =
         task {
             let! crossReferences =
-                ctx.QueryAsync<Tables.SenseCrossReference>(
+                ctx.QueryAsync<Kensaku.Schema.SenseCrossReference>(
                     sql
                         """
                 select scr.*
@@ -271,7 +271,7 @@ module Words =
     let private getAntonymsAsync (senseId: int) (ctx: KensakuConnection) =
         task {
             let! antonyms =
-                ctx.QueryAsync<Tables.Antonym>(
+                ctx.QueryAsync<Kensaku.Schema.Antonym>(
                     sql
                         """
                 select a.*
@@ -323,7 +323,7 @@ module Words =
     let private getLanguageSourcesAsync (senseId: int) (ctx: KensakuConnection) =
         task {
             let! languageSources =
-                ctx.QueryAsync<Tables.LanguageSource>(
+                ctx.QueryAsync<Kensaku.Schema.LanguageSource>(
                     sql
                         """
                 select ls.*
@@ -355,7 +355,7 @@ module Words =
     let private getGlossesAsync (senseId: int) (ctx: KensakuConnection) =
         task {
             let! glosses =
-                ctx.QueryAsync<Tables.Gloss>(
+                ctx.QueryAsync<Kensaku.Schema.Gloss>(
                     sql
                         """
                 select g.*
@@ -377,7 +377,7 @@ module Words =
     let private getSensesAsync (entryId: int) (ctx: KensakuConnection) =
         task {
             let! senses =
-                ctx.QueryAsync<Tables.Sense>(
+                ctx.QueryAsync<Kensaku.Schema.Sense>(
                     sql
                         """
                 select s.*
@@ -422,7 +422,7 @@ module Words =
     let private getTranslationsAsync (entryId: int) (ctx: KensakuConnection) =
         task {
             let! translations =
-                ctx.QueryAsync<Tables.Translation>(
+                ctx.QueryAsync<Kensaku.Schema.Translation>(
                     sql
                         """
                 select t.*
@@ -446,7 +446,7 @@ module Words =
                             )
 
                         let! crossReferences =
-                            ctx.QueryAsync<Tables.TranslationCrossReference>(
+                            ctx.QueryAsync<Kensaku.Schema.TranslationCrossReference>(
                                 sql
                                     """
                         select tcr.*
@@ -456,7 +456,7 @@ module Words =
                             )
 
                         let! contents =
-                            ctx.QueryAsync<Tables.TranslationContent>(
+                            ctx.QueryAsync<Kensaku.Schema.TranslationContent>(
                                 sql
                                     """
                         select tc.*

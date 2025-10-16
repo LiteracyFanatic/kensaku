@@ -36,7 +36,7 @@ module Schema =
 
     let populateKanjiElementPriorities (ctx: KensakuConnection) (kanjiElementId: int) (priorities: string list) =
         for p in priorities do
-            let param: Tables.KanjiElementPriority = {
+            let param: Kensaku.Schema.KanjiElementPriority = {
                 KanjiElementId = kanjiElementId
                 Value = p
             }
@@ -50,7 +50,7 @@ module Schema =
 
     let populateKanjiElementInformation (ctx: KensakuConnection) (kanjiElementId: int) (information: string list) =
         for i in information do
-            let param: Tables.KanjiElementInformation = {
+            let param: Kensaku.Schema.KanjiElementInformation = {
                 KanjiElementId = kanjiElementId
                 Value = i
             }
@@ -64,7 +64,7 @@ module Schema =
 
     let populateKanjiElements (ctx: KensakuConnection) (entryId: int) (kanjiElements: DataSources.KanjiElement list) =
         for k in kanjiElements do
-            let param: Tables.KanjiElement = {
+            let param: Kensaku.Schema.KanjiElement = {
                 Id = Unchecked.defaultof<_>
                 EntryId = entryId
                 Value = k.Value
@@ -87,7 +87,7 @@ module Schema =
 
     let populateReadingElementPriorities (ctx: KensakuConnection) (readingElementId: int) (priorities: string list) =
         for p in priorities do
-            let param: Tables.ReadingElementPriority = {
+            let param: Kensaku.Schema.ReadingElementPriority = {
                 ReadingElementId = readingElementId
                 Value = p
             }
@@ -101,7 +101,7 @@ module Schema =
 
     let populateReadingElementInformation (ctx: KensakuConnection) (readingElementId: int) (information: string list) =
         for i in information do
-            let param: Tables.ReadingElementInformation = {
+            let param: Kensaku.Schema.ReadingElementInformation = {
                 ReadingElementId = readingElementId
                 Value = i
             }
@@ -119,7 +119,7 @@ module Schema =
         (restrictions: string list)
         =
         for r in restrictions do
-            let param: Tables.ReadingElementRestriction = {
+            let param: Kensaku.Schema.ReadingElementRestriction = {
                 ReadingElementId = readingElementId
                 Value = r
             }
@@ -137,7 +137,7 @@ module Schema =
         (readingElements: DataSources.ReadingElement list)
         =
         for r in readingElements do
-            let param: Tables.ReadingElement = {
+            let param: Kensaku.Schema.ReadingElement = {
                 Id = Unchecked.defaultof<_>
                 EntryId = entryId
                 Value = r.Value
@@ -162,7 +162,7 @@ module Schema =
 
     let populateAntonyms (ctx: KensakuConnection) (senseId: int) (antonyms: DataSources.Antonym list) =
         for a in antonyms do
-            let param: Tables.Antonym = {
+            let param: Kensaku.Schema.Antonym = {
                 SenseId = senseId
                 ReferenceKanjiElement = a.Kanji
                 ReferenceReadingElement = a.Reading
@@ -177,7 +177,7 @@ module Schema =
 
     let populateFields (ctx: KensakuConnection) (senseId: int) (fields: string list) =
         for f in fields do
-            let param: Tables.Field = {
+            let param: Kensaku.Schema.Field = {
                 SenseId = senseId
                 Value = f
             }
@@ -187,7 +187,7 @@ module Schema =
 
     let populateDialects (ctx: KensakuConnection) (senseId: int) (dialects: string list) =
         for d in dialects do
-            let param: Tables.Dialect = {
+            let param: Kensaku.Schema.Dialect = {
                 SenseId = senseId
                 Value = d
             }
@@ -201,7 +201,7 @@ module Schema =
         (miscellaneousInformation: string list)
         =
         for m in miscellaneousInformation do
-            let param: Tables.MiscellaneousInformation = {
+            let param: Kensaku.Schema.MiscellaneousInformation = {
                 SenseId = senseId
                 Value = m
             }
@@ -211,7 +211,7 @@ module Schema =
 
     let populateAdditionalInformation (ctx: KensakuConnection) (senseId: int) (additionalInformation: string list) =
         for a in additionalInformation do
-            let param: Tables.SenseInformation = {
+            let param: Kensaku.Schema.SenseInformation = {
                 SenseId = senseId
                 Value = a
             }
@@ -225,7 +225,7 @@ module Schema =
         (languageSources: DataSources.LanguageSource list)
         =
         for l in languageSources do
-            let param: Tables.LanguageSource = {
+            let param: Kensaku.Schema.LanguageSource = {
                 SenseId = senseId
                 Value = l.Value
                 LanguageCode = l.Code
@@ -242,7 +242,7 @@ module Schema =
 
     let populatePartsOfSpeech (ctx: KensakuConnection) (senseId: int) (partsOfSpeech: string list) =
         for p in partsOfSpeech do
-            let param: Tables.PartOfSpeech = {
+            let param: Kensaku.Schema.PartOfSpeech = {
                 SenseId = senseId
                 Value = p
             }
@@ -252,7 +252,7 @@ module Schema =
 
     let populateGlosses (ctx: KensakuConnection) (senseId: int) (glosses: DataSources.Gloss list) =
         for g in glosses do
-            let param: Tables.Gloss = {
+            let param: Kensaku.Schema.Gloss = {
                 SenseId = senseId
                 Value = g.Value
                 Language = g.LanguageCode
@@ -268,7 +268,7 @@ module Schema =
 
     let populateSenseKanjiElementRestrictions (ctx: KensakuConnection) (senseId: int) (restrictions: string list) =
         for r in restrictions do
-            let param: Tables.SenseKanjiElementRestriction = {
+            let param: Kensaku.Schema.SenseKanjiElementRestriction = {
                 SenseId = senseId
                 KanjiElement = r
             }
@@ -282,7 +282,7 @@ module Schema =
 
     let populateSenseReadingElementRestrictions (ctx: KensakuConnection) (senseId: int) (restrictions: string list) =
         for r in restrictions do
-            let param: Tables.SenseReadingElementRestriction = {
+            let param: Kensaku.Schema.SenseReadingElementRestriction = {
                 SenseId = senseId
                 ReadingElement = r
             }
@@ -300,7 +300,7 @@ module Schema =
         (crossReferences: DataSources.CrossReference list)
         =
         for c in crossReferences do
-            let param: Tables.SenseCrossReference = {
+            let param: Kensaku.Schema.SenseCrossReference = {
                 SenseId = senseId
                 ReferenceKanjiElement = c.Kanji
                 ReferenceReadingElement = c.Reading
@@ -316,7 +316,7 @@ module Schema =
 
     let populateSenses (ctx: KensakuConnection) (entryId: int) (senses: DataSources.Sense list) =
         for s in senses do
-            let param: Tables.Sense = {
+            let param: Kensaku.Schema.Sense = {
                 Id = Unchecked.defaultof<_>
                 EntryId = entryId
             }
@@ -341,7 +341,7 @@ module Schema =
         use transaction = ctx.BeginTransaction()
 
         for entry in jMdictEntries do
-            let param: Tables.Entry = {
+            let param: Kensaku.Schema.Entry = {
                 Id = entry.Id
             }
 
@@ -356,7 +356,7 @@ module Schema =
 
     let populateNameTypes (ctx: KensakuConnection) (translationId: int) (nameTypes: string list) =
         for n in nameTypes do
-            let param: Tables.NameType = {
+            let param: Kensaku.Schema.NameType = {
                 TranslationId = translationId
                 Value = n
             }
@@ -370,7 +370,7 @@ module Schema =
         (crossReferences: DataSources.CrossReference list)
         =
         for c in crossReferences do
-            let param: Tables.TranslationCrossReference = {
+            let param: Kensaku.Schema.TranslationCrossReference = {
                 TranslationId = translationId
                 ReferenceKanjiElement = c.Kanji
                 ReferenceReadingElement = c.Reading
@@ -390,7 +390,7 @@ module Schema =
         (contents: DataSources.TranslationContents list)
         =
         for c in contents do
-            let param: Tables.TranslationContent = {
+            let param: Kensaku.Schema.TranslationContent = {
                 TranslationId = translationId
                 Value = c.Value
                 Language = c.LanguageCode
@@ -405,7 +405,7 @@ module Schema =
 
     let populateTranslations (ctx: KensakuConnection) (entryId: int) (translations: DataSources.Translation list) =
         for t in translations do
-            let param: Tables.Translation = {
+            let param: Kensaku.Schema.Translation = {
                 Id = Unchecked.defaultof<_>
                 EntryId = entryId
             }
@@ -422,7 +422,7 @@ module Schema =
         use transaction = ctx.BeginTransaction()
 
         for entry in jMnedictEntries do
-            let param: Tables.Entry = {
+            let param: Kensaku.Schema.Entry = {
                 Id = entry.Id
             }
 
@@ -441,7 +441,7 @@ module Schema =
     let populateKanjidic2Info (ctx: KensakuConnection) (info: DataSources.Kanjidic2Info) =
         use transaction = ctx.BeginTransaction()
 
-        let param: Tables.Kanjidic2Info = {
+        let param: Kensaku.Schema.Kanjidic2Info = {
             FileVersion = info.FileVersion
             DatabaseVersion = info.DatabaseVersion
             DateOfCreation = info.DateOfCreation
@@ -458,7 +458,7 @@ module Schema =
 
     let populateCodepoints (ctx: KensakuConnection) (characterId: int) (codepoints: DataSources.CodePoint list) =
         for c in codepoints do
-            let param: Tables.Codepoint = {
+            let param: Kensaku.Schema.Codepoint = {
                 CharacterId = characterId
                 Value = c.Value
                 Type = c.Type
@@ -472,7 +472,7 @@ module Schema =
 
     let populateKeyRadicals (ctx: KensakuConnection) (characterId: int) (keyRadicals: DataSources.KeyRadical list) =
         for k in keyRadicals do
-            let param: Tables.KeyRadical = {
+            let param: Kensaku.Schema.KeyRadical = {
                 CharacterId = characterId
                 Value = k.Value
                 Type = k.Type
@@ -486,7 +486,7 @@ module Schema =
 
     let populateStrokeMiscounts (ctx: KensakuConnection) (characterId: int) (strokeMiscounts: int list) =
         for s in strokeMiscounts do
-            let param: Tables.StrokeMiscount = {
+            let param: Kensaku.Schema.StrokeMiscount = {
                 CharacterId = characterId
                 Value = s
             }
@@ -500,7 +500,7 @@ module Schema =
         (characterVariants: DataSources.CharacterVariant list)
         =
         for c in characterVariants do
-            let param: Tables.CharacterVariant = {
+            let param: Kensaku.Schema.CharacterVariant = {
                 CharacterId = characterId
                 Value = c.Value
                 Type = c.Type
@@ -514,7 +514,7 @@ module Schema =
 
     let populateRadicalNames (ctx: KensakuConnection) (characterId: int) (radicalNames: string list) =
         for r in radicalNames do
-            let param: Tables.RadicalName = {
+            let param: Kensaku.Schema.RadicalName = {
                 CharacterId = characterId
                 Value = r
             }
@@ -528,7 +528,7 @@ module Schema =
         (references: DataSources.DictionaryReference list)
         =
         for r in references do
-            let param: Tables.CharacterDictionaryReference = {
+            let param: Kensaku.Schema.CharacterDictionaryReference = {
                 CharacterId = characterId
                 IndexNumber = r.IndexNumber
                 Type = r.Type
@@ -549,7 +549,7 @@ module Schema =
         (queryCodes: DataSources.QueryCode list)
         =
         for q in queryCodes do
-            let param: Tables.CharacterQueryCode = {
+            let param: Kensaku.Schema.CharacterQueryCode = {
                 CharacterId = characterId
                 Value = q.Value
                 Type = q.Type
@@ -569,7 +569,7 @@ module Schema =
         (readings: DataSources.CharacterReading list)
         =
         for r in readings do
-            let param: Tables.CharacterReading = {
+            let param: Kensaku.Schema.CharacterReading = {
                 CharacterId = characterId
                 Value = r.Value
                 Type = r.Type
@@ -587,7 +587,7 @@ module Schema =
         (meanings: DataSources.CharacterMeaning list)
         =
         for m in meanings do
-            let param: Tables.CharacterMeaning = {
+            let param: Kensaku.Schema.CharacterMeaning = {
                 CharacterId = characterId
                 Value = m.Value
                 Language = m.LanguageCode
@@ -602,7 +602,7 @@ module Schema =
 
     let populateNanori (ctx: KensakuConnection) (characterId: int) (nanori: string list) =
         for n in nanori do
-            let param: Tables.Nanori = {
+            let param: Kensaku.Schema.Nanori = {
                 CharacterId = characterId
                 Value = n
             }
@@ -614,7 +614,7 @@ module Schema =
         use transaction = ctx.BeginTransaction()
 
         for c in characters do
-            let param: Tables.Character = {
+            let param: Kensaku.Schema.Character = {
                 Id = Unchecked.defaultof<_>
                 Value = c.Value
                 Grade = c.Grade
@@ -674,7 +674,7 @@ module Schema =
 
     let populateRadicalValues (ctx: KensakuConnection) (radicalId: int) (radicalValues: (Rune * string) list) =
         for r, t in radicalValues do
-            let param: Tables.RadicalValue = {
+            let param: Kensaku.Schema.RadicalValue = {
                 RadicalId = radicalId
                 Value = r
                 Type = t
@@ -688,7 +688,7 @@ module Schema =
 
     let populateRadicalMeanings (ctx: KensakuConnection) (radicalId: int) (radicalMeanings: (string * string) list) =
         for m, t in radicalMeanings do
-            let param: Tables.RadicalMeaning = {
+            let param: Kensaku.Schema.RadicalMeaning = {
                 RadicalId = radicalId
                 Value = m
                 Type = t
@@ -708,7 +708,7 @@ module Schema =
         use transaction = ctx.BeginTransaction()
 
         for radical in cjkRadicals do
-            let param: Tables.Radical = {
+            let param: Kensaku.Schema.Radical = {
                 Id = Unchecked.defaultof<_>
                 Number = Some radical.RadicalNumber
                 StrokeCount = Unchecked.defaultof<_>

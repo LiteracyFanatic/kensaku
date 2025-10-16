@@ -89,11 +89,11 @@ module Radicals =
             else
                 let param = {| Ids = ids |}
 
-                let! radicals = ctx.QueryAsync<Tables.Radical>(sql "select * from Radicals where Id in @Ids", param)
+                let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals where Id in @Ids", param)
                 let radicalsById = radicals |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
                 let! radicalValues =
-                    ctx.QueryAsync<Tables.RadicalValue>(
+                    ctx.QueryAsync<Kensaku.Schema.RadicalValue>(
                         sql "select * from RadicalValues where RadicalId in @Ids",
                         param
                     )
@@ -101,7 +101,7 @@ module Radicals =
                 let radicalValuesByRadicalId = radicalValues |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
                 let! radicalMeanings =
-                    ctx.QueryAsync<Tables.RadicalMeaning>(
+                    ctx.QueryAsync<Kensaku.Schema.RadicalMeaning>(
                         sql "select * from RadicalMeanings where RadicalId in @Ids",
                         param
                     )
