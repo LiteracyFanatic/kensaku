@@ -71,7 +71,7 @@ module WordCommand =
                 |> Async.RunSynchronously
                 |> Seq.toList
             | None ->
-                let query : GetWordsQuery = {
+                let query: GetWordsQuery = {
                     Reading = args.TryGetResult Reading
                     Meaning = args.TryGetResult Meaning
                 }

@@ -525,7 +525,10 @@ module Words =
             and (@Reading is null or re.Value = @Reading)
             and (@Meaning is null or (g.Value regexp @Meaning or tc.Value regexp @Meaning))
             order by e.Id""",
-            {| Reading = query.Reading; Meaning = query.Meaning |}
+            {|
+                Reading = query.Reading
+                Meaning = query.Meaning
+            |}
         )
 
     /// <summary>

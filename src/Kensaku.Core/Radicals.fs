@@ -89,7 +89,9 @@ module Radicals =
             else
                 let param = {| Ids = ids |}
 
-                let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals where Id in @Ids", param)
+                let! radicals =
+                    ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals where Id in @Ids", param)
+
                 let radicalsById = radicals |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
                 let! radicalValues =

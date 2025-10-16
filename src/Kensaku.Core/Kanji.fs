@@ -352,7 +352,9 @@ module Kanji =
         task {
             let param = {| Ids = ids |}
 
-            let! characters = ctx.QueryAsync<Kensaku.Schema.Character>(sql "select * from Characters where Id in @Ids", param)
+            let! characters =
+                ctx.QueryAsync<Kensaku.Schema.Character>(sql "select * from Characters where Id in @Ids", param)
+
             let charactersById = characters |> Seq.map (fun x -> x.Id, x) |> Map.ofSeq
 
             let! characterQueryCodes =
@@ -382,7 +384,9 @@ module Kanji =
             let characterReadingsByCharacterId =
                 characterReadings |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
-            let! nanori = ctx.QueryAsync<Kensaku.Schema.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
+            let! nanori =
+                ctx.QueryAsync<Kensaku.Schema.Nanori>(sql "select * from Nanori where CharacterId in @Ids", param)
+
             let nanoriByCharacterId = nanori |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! radicals = ctx.QueryAsync<Kensaku.Schema.Radical>(sql "select * from Radicals")
@@ -396,7 +400,10 @@ module Kanji =
                 radicalMeanings |> Seq.groupBy _.RadicalId |> Map.ofSeq
 
             let! keyRadicals =
-                ctx.QueryAsync<Kensaku.Schema.KeyRadical>(sql "select * from KeyRadicals where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.KeyRadical>(
+                    sql "select * from KeyRadicals where CharacterId in @Ids",
+                    param
+                )
 
             let keyRadicalsByCharacterId =
                 keyRadicals
@@ -462,7 +469,10 @@ module Kanji =
                 characterVariants |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
             let! codepoints =
-                ctx.QueryAsync<Kensaku.Schema.Codepoint>(sql "select * from CodePoints where CharacterId in @Ids", param)
+                ctx.QueryAsync<Kensaku.Schema.Codepoint>(
+                    sql "select * from CodePoints where CharacterId in @Ids",
+                    param
+                )
 
             let codepointsByCharacterId = codepoints |> Seq.groupBy _.CharacterId |> Map.ofSeq
 
