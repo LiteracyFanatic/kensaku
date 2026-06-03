@@ -34,6 +34,6 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.2" />
-    <PackageReference Include="Kensaku.Schema" Version="0.1.0-preview.1" />
+    <ProjectReference Include="..\Kensaku.Schema\Kensaku.Schema.fsproj" />
   </ItemGroup>
 </Project>
