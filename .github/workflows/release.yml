@@ -183,10 +183,10 @@ jobs:
 
       - name: Insert SHA256 Checksums into chocolateyInstall.ps1
         run: |
-          EXE_HASH="${{ needs.build-kensaku.outputs.exe-sha256 }}"
-          DB_HASH="${{ needs.build-kensaku.outputs.db-sha256 }}"
-          sed -i "s|<EXE_SHA256>|$EXE_HASH|g" packaging/chocolatey/chocolateyInstall.ps1
-          sed -i "s|<DB_SHA256>|$DB_HASH|g" packaging/chocolatey/chocolateyInstall.ps1
+          $content = Get-Content packaging/chocolatey/chocolateyInstall.ps1 -Raw
+          $content = $content.Replace('<EXE_SHA256>', '${{ needs.build-kensaku.outputs.exe-sha256 }}')
+          $content = $content.Replace('<DB_SHA256>', '${{ needs.build-kensaku.outputs.db-sha256 }}')
+          Set-Content packaging/chocolatey/chocolateyInstall.ps1 $content
 
       - name: Build Chocolatey Package
         run: |
