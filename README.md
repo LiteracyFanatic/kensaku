@@ -11,7 +11,7 @@
 Follow the instructions [here](https://chocolatey.org/install) to install the Chocolatey package manager. Then run the following command:
 
 ```powershell
-choco install -y --version 0.1.0 kensaku
+choco install -y --version 0.2.0 kensaku
 ```
 
 ### Debian
