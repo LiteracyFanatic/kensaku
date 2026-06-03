@@ -16,5 +16,6 @@ Get-ChocolateyWebFile `
   -Checksum '<DB_SHA256>' `
   -ChecksumType sha256
 
-Copy-Item -Force kensaku.bat "$installPath\kensaku.bat"
+$wrapperPath = Join-Path $PSScriptRoot "kensaku.bat"
+Copy-Item -Force $wrapperPath "$installPath\kensaku.bat"
 Install-BinFile -Name kensaku -Path "$installPath\kensaku.bat"
