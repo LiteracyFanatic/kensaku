@@ -191,10 +191,21 @@ jobs:
       - name: Build Chocolatey Package
         run: |
           cd packaging/chocolatey
-          cat kensaku.nuspec
           choco pack
           mkdir -p ../../artifacts
           mv kensaku.${{ needs.set-version.outputs.version }}.nupkg ../../artifacts/kensaku-choco.nupkg
+
+      - name: Publish Chocolatey Package
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CHOCOLATEY_API_KEY)) {
+            throw "CHOCOLATEY_API_KEY secret is required"
+          }
+
+          choco push artifacts/kensaku-choco.nupkg `
+            --source "https://push.chocolatey.org/" `
+            --api-key "$env:CHOCOLATEY_API_KEY"
 
       - name: Upload Built Packages
         uses: actions/upload-artifact@v4
