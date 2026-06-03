@@ -11,7 +11,7 @@
 Follow the instructions [here](https://chocolatey.org/install) to install the Chocolatey package manager. Then run the following command:
 
 ```powershell
-choco install -y --version 0.2.0 kensaku
+choco install -y --version 0.2.1 kensaku
 ```
 
 ### Debian
@@ -19,7 +19,7 @@ choco install -y --version 0.2.0 kensaku
 Follow the instructions [here](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian?tabs=dotnet9) to install the .NET 9 runtime. Then run the following commands:
 
 ```bash
-wget https://github.com/LiteracyFanatic/kensaku/releases/download/latest/kensaku.deb
+wget https://github.com/LiteracyFanatic/kensaku/releases/latest/download/kensaku.deb
 sudo apt install -y ./kensaku.deb
 ```
 
