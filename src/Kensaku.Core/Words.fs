@@ -95,6 +95,7 @@ module Words =
     type GetWordsQuery = {
         Reading: string option
         Meaning: string option
+        Pattern: string option
     }
 
     let private getIdsForWordLiteralsAsync (word: string) (ctx: KensakuConnection) =
@@ -524,15 +525,29 @@ module Words =
             where true
             and (@Reading is null or re.Value = @Reading)
             and (@Meaning is null or (g.Value regexp @Meaning or tc.Value regexp @Meaning))
+            and (
+                @Pattern is null
+                or exists (
+                    select 1
+                    from KanjiElements as patternKe
+                    where patternKe.EntryId = e.Id and patternKe.Value like @Pattern
+                )
+                or exists (
+                    select 1
+                    from ReadingElements as patternRe
+                    where patternRe.EntryId = e.Id and patternRe.Value like @Pattern
+                )
+            )
             order by e.Id""",
             {|
                 Reading = query.Reading
                 Meaning = query.Meaning
+                Pattern = query.Pattern
             |}
         )
 
     /// <summary>
-    /// Queries dictionary words based on reading or meaning.
+    /// Queries dictionary words based on reading, meaning, or pattern.
     /// </summary>
     /// <param name="query">The search query parameters.</param>
     /// <param name="ctx">The database connection.</param>

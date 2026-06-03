@@ -15,6 +15,7 @@ module WordCommand =
         | [<MainCommand; Last>] Word of string
         | Reading of string
         | Meaning of string
+        | Pattern of string
         | Format of Format
         | No_Pager
 
@@ -24,6 +25,7 @@ module WordCommand =
                 | Word _ -> "show info for the given word"
                 | Reading _ -> "search for words with the given reading"
                 | Meaning _ -> "search for words with a meaning that matches the given regular expression"
+                | Pattern _ -> "search for words with a written form or reading matching the given pattern"
                 | Format _ -> "output format"
                 | No_Pager -> "do not use a pager"
 
@@ -31,7 +33,8 @@ module WordCommand =
         match arg with
         | Word _
         | Reading _
-        | Meaning _ -> true
+        | Meaning _
+        | Pattern _ -> true
         | Format _
         | No_Pager -> false
 
@@ -74,6 +77,7 @@ module WordCommand =
                 let query: GetWordsQuery = {
                     Reading = args.TryGetResult Reading
                     Meaning = args.TryGetResult Meaning
+                    Pattern = args.TryGetResult Pattern
                 }
 
                 getWordsAsync query ctx

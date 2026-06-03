@@ -58,6 +58,7 @@ task {
     let wordQuery: GetWordsQuery = {
         Reading = Some "こんにちは"
         Meaning = None
+        Pattern = None
     }
     let! words = getWordsAsync wordQuery ctx
 

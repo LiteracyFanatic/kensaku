@@ -60,10 +60,13 @@ noun (common) (futsuumeishi), noun or participle which takes the aux. verb suru,
 1. looking up (e.g. a word in a dictionary); search (e.g. on the Internet); retrieval (of information); reference
 ```
 
-You can also search for words by reading or meaning instead of passing a literal word:
+You can also search for words by reading, meaning, or pattern instead of passing a literal word:
 
 - `kensaku word --reading けんさく`
 - `kensaku word --meaning "search"`
+- `kensaku word --pattern "祝_"`
+
+Word patterns use SQLite `LIKE` wildcards: `_` matches one character, and `%` matches any number of characters. For example, `祝_` matches two-character forms beginning with `祝`, while `%けん%` matches forms or readings containing `けん`.
 
 This is a relatively short one, but many entries will have multiple meanings with notes, cross-references, and other forms of the word using different kanji. Speaking of kanji, let's see what kensaku can tell us about `賀`: `kensaku kanji 賀`.
 
